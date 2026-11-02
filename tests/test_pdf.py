@@ -25,21 +25,46 @@ def test_highlights_prioritize_and_diversify() -> None:
 
 def test_write_pdf(tmp_path: Path) -> None:
     rep = audit(ARTIGO)
-    rep.references = [{
-        "key": "burn", "status": "confirmada", "bib_location": "r.bib:1",
-        "title": "Long-term effect of aspirin", "authors": ["John Burn"], "year": 2011,
-        "venue": "The Lancet", "source": "Crossref", "url": "https://doi.org/10.1/x",
-        "abstract": "Aspirin reduced cancer.", "divergences": [],
-        "uses": [{"location": "s.tex:3", "claim": "A aspirina reduz o câncer → sim",
-                  "verdict": "sustenta", "score": 0.93, "evidence": "Aspirin reduced cancer."}],
-    }]
+    rep.references = [
+        {
+            "key": "burn",
+            "status": "confirmada",
+            "bib_location": "r.bib:1",
+            "title": "Long-term effect of aspirin",
+            "authors": ["John Burn"],
+            "year": 2011,
+            "venue": "The Lancet",
+            "source": "Crossref",
+            "url": "https://doi.org/10.1/x",
+            "abstract": "Aspirin reduced cancer.",
+            "divergences": [],
+            "uses": [
+                {
+                    "location": "s.tex:3",
+                    "claim": "A aspirina reduz o câncer → sim",
+                    "verdict": "sustenta",
+                    "score": 0.93,
+                    "evidence": "Aspirin reduced cancer.",
+                }
+            ],
+        }
+    ]
     out = tmp_path / "r.pdf"
     write_pdf(rep, out)
     assert out.read_bytes().startswith(b"%PDF")
     text = pdf_text(out)
-    for needle in ("Relatório do errei", "Principais problemas", "Possíveis melhorias",
-                   "Referências verificadas", "Long-term effect of aspirin", "sustenta",
-                   "Métricas", "Todos os achados", "Limitações", "secoes/metodologia.tex"):
+    for needle in (
+        "Relatório do errei",
+        "Principais problemas",
+        "Possíveis melhorias",
+        "Referências verificadas",
+        "Long-term effect of aspirin",
+        "sustenta",
+        "Métricas",
+        "Todos os achados",
+        "Limitações",
+        "secoes/metodologia.tex",
+    ):
         assert needle in text, needle
     assert "→" in text  # fonte Unicode embutida
     assert len(PdfReader(str(out)).pages) >= 4

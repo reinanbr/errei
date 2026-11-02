@@ -113,9 +113,14 @@ def test_modelo_baixar(tmp_path: Path, monkeypatch, respx_mock) -> None:  # type
     good = _tarball({"errei-cita-v1/config.json": b"{}", "errei-cita-v1/README.md": b"x"})
     sha = hashlib.sha256(good).hexdigest()
     respx_mock.get("https://rel.example.org/v9/errei-cita-v1.tar.gz").mock(
-        return_value=httpx.Response(200, content=good))
+        return_value=httpx.Response(200, content=good)
+    )
+    respx_mock.get("https://rel.example.org/v9/sha256sums-modelo.txt").mock(
+        return_value=httpx.Response(200, text=f"{sha}  errei-cita-v1.tar.gz\n")
+    )
     respx_mock.get("https://rel.example.org/v9/sha256sums.txt").mock(
-        return_value=httpx.Response(200, text=f"{sha}  errei-cita-v1.tar.gz\n"))
+        return_value=httpx.Response(404)
+    )
     assert cli("modelo", "baixar").exit_code == 0
     assert (tmp_path / "m" / "config.json").is_file()
     assert cli("modelo", "baixar").exit_code == 2  # já instalado
@@ -130,11 +135,16 @@ def test_modelo_baixar_rejects_bad_archives(tmp_path: Path, monkeypatch, respx_m
     route = respx_mock.get("https://rel.example.org/v9/errei-cita-v1.tar.gz")
     route.mock(return_value=httpx.Response(200, content=evil))
     respx_mock.get("https://rel.example.org/v9/sha256sums.txt").mock(
-        return_value=httpx.Response(404))
+        return_value=httpx.Response(404)
+    )
+    respx_mock.get("https://rel.example.org/v9/sha256sums-modelo.txt").mock(
+        return_value=httpx.Response(404)
+    )
     res = cli("modelo", "baixar")
     assert res.exit_code == 2 and not (tmp_path.parent / "fora.txt").exists()
     ok = _tarball({"config.json": b"{}"})
     route.mock(return_value=httpx.Response(200, content=ok))
     respx_mock.get("https://rel.example.org/v9/sha256sums.txt").mock(
-        return_value=httpx.Response(200, text="0" * 64 + "  errei-cita-v1.tar.gz\n"))
+        return_value=httpx.Response(200, text="0" * 64 + "  errei-cita-v1.tar.gz\n")
+    )
     assert cli("modelo", "baixar").exit_code == 2  # checksum não confere

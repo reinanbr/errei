@@ -68,12 +68,17 @@ def baixar(versao: str | None = None, *, force: bool = False) -> Path:
         data = r.content
         if len(data) > MAX_BYTES:
             raise ModelDownloadError("pacote do modelo grande demais")
-        sums = client.get(f"{base}/sha256sums.txt")
+        expected: dict[str, str] = {}
+        for name in ("sha256sums-modelo.txt", "sha256sums.txt"):
+            sums = client.get(f"{base}/{name}")
+            if sums.status_code == 200:
+                for ln in sums.text.splitlines():
+                    parts = ln.split()
+                    if len(parts) == 2:
+                        expected.setdefault(parts[1], parts[0])
     digest = hashlib.sha256(data).hexdigest()
-    if sums.status_code == 200:
-        expected = {ln.split()[-1]: ln.split()[0] for ln in sums.text.splitlines() if ln.strip()}
-        if ASSET in expected and expected[ASSET] != digest:
-            raise ModelDownloadError("checksum do modelo não confere")
+    if ASSET in expected and expected[ASSET] != digest:
+        raise ModelDownloadError("checksum do modelo não confere")
     with tempfile.TemporaryDirectory() as tmp:
         _safe_extract(data, Path(tmp))
         found = next(Path(tmp).rglob("config.json"), None)
