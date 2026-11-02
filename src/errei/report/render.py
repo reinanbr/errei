@@ -203,7 +203,21 @@ def to_markdown(report: Report) -> str:
     for lim in report.limitations:
         out.append(f"- {lim}")
     out.append("")
+    out += base_markdown(report.meta)
     return "\n".join(out)
+
+
+def base_markdown(meta: dict[str, Any]) -> list[str]:
+    from errei.report.base import base_lines
+
+    base = meta.get("base")
+    if not base:
+        return []
+    out = ["---", "", "## Base do relatório", ""]
+    for k, v in base_lines(base):
+        out.append(f"- **{k}:** {v}")
+    out.append("")
+    return out
 
 
 # ------------------------------------------------------------------ terminal
@@ -358,6 +372,11 @@ def _limitations(report: Report, console: Console) -> None:
     for item in report.limitations:
         lim.append(f"• {item}\n")
     console.print(Panel(lim, title="Limitações", border_style="dim"))
+    base = report.meta.get("base")
+    if base:
+        from errei.report.base import footer_text
+
+        console.print(Text(f"Base: {footer_text(base)}", style="dim"))
 
 
 def to_term_string(report: Report, *, color: bool = False) -> str:

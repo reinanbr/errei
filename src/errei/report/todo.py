@@ -229,12 +229,14 @@ DECLARACOES: dict[str, tuple[str, str, str]] = {
         "informe agências de fomento e números de processo (ou 'sem financiamento')",
     ),
     "ia": (
-        "Declaração de uso de IA",
+        "Declaração de uso de IA (só se você usou IA)",
         r"(inteligencia artificial generativa|uso de (ia|inteligencia artificial)|"
         r"chatgpt|gemini|large language model|modelos? de linguagem)",
-        "declare se e como ferramentas de IA foram usadas (exigência crescente dos periódicos)",
+        "opcional: só declare se usou IA na escrita ou na análise e o periódico pedir",
     ),
 }
+# declarações que só se aplicam em alguns casos: aparecem como informação, nunca como pendência
+OPCIONAIS = {"ia"}
 HUMANOS = re.compile(
     r"(participantes|entrevistad|questionari|pacientes|voluntari|respondentes|"
     r"grupo focal|sujeitos da pesquisa)"
@@ -527,6 +529,18 @@ def metas(report: Report, nivel: Nivel, project: Any, mono: bool) -> list[Meta]:
             if key == "etica" and not HUMANOS.search(texto):
                 continue  # só se a pesquisa envolve pessoas
             found = bool(re.search(rx, texto))
+            if key in OPCIONAIS:
+                # não é exigência: só informa (sem ❌ e sem virar item da lista)
+                out.append(
+                    Meta(
+                        nome,
+                        "opcional",
+                        "presente" if found else "ausente",
+                        True if found else None,
+                        como,
+                    )
+                )
+                continue
             out.append(Meta(nome, "presente", "presente" if found else "ausente", found, como))
     if not report.meta.get("online"):
         out.append(
@@ -628,7 +642,7 @@ def build(report: Report, nivel_key: str = "a1", previous: dict[str, str] | None
     md.append("| | meta | alvo | atual | como chegar lá |")
     md.append("|---|---|---|---|---|")
     for m in ms:
-        icon = "✅" if m.ok else ("❌" if m.ok is False else "⚠️")
+        icon = "✅" if m.ok else ("❌" if m.ok is False else ("ℹ️" if m.alvo == "opcional" else "⚠️"))
         md.append(f"| {icon} | {m.nome} | {m.alvo} | {m.atual} | {m.como} |")
     md.append("")
 
@@ -676,6 +690,9 @@ def build(report: Report, nivel_key: str = "a1", previous: dict[str, str] | None
         "não são vereditos; veja as Limitações no relatório completo."
     )
     md.append("")
+    from errei.report.render import base_markdown
+
+    md += base_markdown(report.meta)
     return "\n".join(md)
 
 

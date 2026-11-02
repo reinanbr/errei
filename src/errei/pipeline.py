@@ -130,8 +130,10 @@ def run(
         ctx.prior_findings = list(findings)
         findings.extend(_safe_run(c, project, ctx))
 
+    hosts: set[str] = set()
     if ctx.http is not None:
         findings.extend(ctx.http.status_findings())
+        hosts = set(getattr(ctx.http, "hosts", set()))
         ctx.http.close()
 
     ign = IgnoreIndex.build(
@@ -182,6 +184,9 @@ def run(
             "enviado": sorted(set(gem.sent)),
             "uso": "apenas sugestões no relatório; nenhum texto é escrito no artigo",
         }
+    from errei.report.base import build_base
+
+    meta["base"] = build_base(meta, names, hosts)
     return Report(
         findings=kept,
         metrics=ctx.metrics,

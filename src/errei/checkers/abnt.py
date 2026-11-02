@@ -13,7 +13,7 @@ from errei.bib.names import split_authors
 from errei.bib.parser import BibEntry
 from errei.checkers.base import BaseChecker, RunContext
 from errei.latex.scanner import find_commands, parse_args
-from errei.model import Finding, Rule
+from errei.model import Finding, Rule, clip
 from errei.model import Severity as S
 from errei.text.abstracts import AbstractBlock, find_abstracts, split_keywords
 from errei.text.segment import word_count
@@ -91,6 +91,17 @@ class AbntChecker(BaseChecker):
             "Deve-se evitar no resumo o uso de citações, símbolos, fórmulas e equações que "
             "não sejam de uso corrente.",
             f"{R6028}, 4.2",
+        ),
+        Rule(
+            "ABNT-RESUMO-005",
+            S.AVISO,
+            "Resumo sem objetivo, método, resultados ou conclusões",
+            "O resumo deve ressaltar o objetivo, o método, os resultados e as conclusões do "
+            "documento. O papel de cada frase é estimado pelo modelo local errei-resumo-v1 "
+            "(quando instalado) ou por palavras-chave e posição (menos preciso; nesse caso "
+            "o achado sai como sugestão). A lista de frases com seus papéis vai em 'motivo'.",
+            f"{R6028}, 4.2",
+            heuristic=True,
         ),
         Rule(
             "ABNT-ABSTRACT-001",
@@ -369,7 +380,7 @@ class AbntChecker(BaseChecker):
                 )
             )
         else:
-            out += self._abstract_block(resumo, "resumo", rmin, rmax, kmin, kmax)
+            out += self._abstract_block(resumo, "resumo", rmin, rmax, kmin, kmax, ctx)
         if not foreign:
             out.append(
                 self.finding(
@@ -380,7 +391,7 @@ class AbntChecker(BaseChecker):
                 )
             )
         for b in foreign:
-            out += self._abstract_block(b, "abstract", rmin, rmax, kmin, kmax)
+            out += self._abstract_block(b, "abstract", rmin, rmax, kmin, kmax, ctx)
 
         titles = [(p, p.text.strip()) for p in project.paragraphs(("heading",))]
         if titles and not any(INTRO_RE.search(t) for _, t in titles):
@@ -412,12 +423,72 @@ class AbntChecker(BaseChecker):
             )
         return out
 
+    def _rhetoric(self, b: AbstractBlock, label: str, ctx: RunContext | None) -> list[Finding]:
+        """NBR 6028: o resumo traz objetivo, método, resultados e conclusões?"""
+        from errei import resumocheck
+        from errei.text.segment import sentences
+
+        frases = [s.text.strip() for p in b.paragraphs for s in sentences(p.text)]
+        frases = [f for f in frases if len(f.split()) >= 3]
+        if len(frases) < 3 or word_count(b.text) < 40:
+            return []
+        papeis = resumocheck.analisar(frases)
+        modelo = bool(papeis) and papeis[0].fonte == "modelo"
+        if modelo and ctx is not None:
+            ctx.extra_meta["modelo_resumo"] = (
+                f"{resumocheck.MODEL_NAME} (papel das frases do resumo, NBR 6028): ajuste fino "
+                "multilíngue sobre o CSAbstruct (Apache-2.0)"
+            )
+        tem = resumocheck.elementos(papeis)
+        falta = [
+            resumocheck.NOMES[k]
+            for k in ("objetivo", "metodo", "resultado", "conclusao")
+            if not tem[k]
+        ]
+        if not falta:
+            return []
+        linhas = [
+            f"{i}. [{resumocheck.NOMES.get(p.papel, p.papel)}"
+            f"{f' {p.prob:.0%}' if p.fonte == 'modelo' else ''}] {clip(p.frase, 110)}"
+            for i, p in enumerate(papeis, 1)
+        ]
+        linhas.append(f"papéis estimados por {'errei-resumo-v1' if modelo else 'palavras-chave'}")
+        ev = tuple(linhas)
+        dica = {
+            "objetivo": "uma frase com o objetivo ('Este trabalho tem como objetivo…')",
+            "método": "como o estudo foi feito (tipo de pesquisa, dados, procedimentos)",
+            "resultados": "os principais resultados, de preferência com números",
+            "conclusões": "o que os resultados significam (conclusão/implicação)",
+        }
+        p0 = b.paragraphs[0]
+        return [
+            self.finding(
+                "ABNT-RESUMO-005",
+                f"{label}: não foi identificada frase de {', '.join(falta)}",
+                severity=None if modelo else S.SUGESTAO,
+                location=p0.location(0),
+                excerpt=p0.text[:120],
+                evidence=ev,
+                confidence=0.6 if modelo else 0.35,
+                suggestion="inclua " + "; ".join(dica[f] for f in falta),
+            )
+        ]
+
     def _abstract_block(
-        self, b: AbstractBlock, label: str, rmin: int, rmax: int, kmin: int, kmax: int
+        self,
+        b: AbstractBlock,
+        label: str,
+        rmin: int,
+        rmax: int,
+        kmin: int,
+        kmax: int,
+        ctx: RunContext | None = None,
     ) -> list[Finding]:
         out: list[Finding] = []
         if not b.paragraphs:
             return out
+        if ctx is None or ctx.config.get("abnt", "estrutura_resumo", True):
+            out += self._rhetoric(b, label, ctx)
         p0 = b.paragraphs[0]
         loc = p0.location(0)
         n = word_count(b.text)

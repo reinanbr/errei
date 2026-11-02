@@ -91,6 +91,7 @@ class HttpClient:
         self._disabled: dict[str, str] = {}
         self._lock = threading.Lock()
         self.requests_made = 0
+        self.hosts: set[str] = set()  # hosts consultados (base do relatório)
 
     # ------------------------------------------------------------------
     def _key(self, url: str, params: dict[str, Any] | None) -> str:
@@ -113,6 +114,7 @@ class HttpClient:
         """GET com cache. Retorna (status, corpo) ou ``None`` se a fonte falhou."""
         host = urlsplit(url).hostname or ""
         key = self._key(url, params)
+        self.hosts.add(host)
         if use_cache:
             hit = self.cache.get(key)
             if hit is not None:
@@ -158,6 +160,7 @@ class HttpClient:
         host = urlsplit(url).hostname or ""
         if not url.startswith(("https://", "http://")) or self.disabled(host):
             return None
+        self.hosts.add(host)
         cache_file = None
         if self.cache_dir is not None:
             cache_file = (
@@ -226,6 +229,7 @@ class HttpClient:
 
         host = urlsplit(url).hostname or ""
         body = json.dumps(payload, sort_keys=True, ensure_ascii=False)
+        self.hosts.add(host)
         key = "POST " + url + "#" + hashlib.sha256(body.encode()).hexdigest()
         if use_cache:
             hit = self.cache.get(key)

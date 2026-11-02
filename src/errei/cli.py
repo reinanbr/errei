@@ -364,65 +364,95 @@ def explain(
     typer.echo(rule.explanation)
 
 
-modelo_app = typer.Typer(help="Gerencia o modelo errei-cita (validação de atribuições).")
+modelo_app = typer.Typer(help="Gerencia os modelos locais (errei-cita, errei-resumo).")
 app.add_typer(modelo_app, name="modelo")
 
 
-@modelo_app.command("info", help="Mostra onde o modelo está e suas métricas de avaliação.")
+@modelo_app.command("info", help="Mostra onde cada modelo está e suas métricas de avaliação.")
 def modelo_info() -> None:
     import json as _json
 
-    from errei import citecheck
+    from errei import citecheck, resumocheck
+    from errei.modelo_dist import DESCRICAO
 
-    d = citecheck.model_dir()
-    typer.echo(f"modelo: {citecheck.MODEL_NAME}")
-    typer.echo(f"pasta:  {d}")
-    reason = citecheck.unavailable_reason()
-    typer.echo(f"estado: {'pronto' if reason is None else reason}")
-    card = d / "errei_avaliacao.json"
-    if card.is_file():
-        data = _json.loads(card.read_text(encoding="utf-8"))
-        for lg in ("en", "pt"):
-            r = data.get(f"afirmacao_{lg}", {})
-            if r:
-                typer.echo(
-                    f"teste (afirmação em {lg}): acurácia {r['acuracia']:.3f}, "
-                    f"F1 macro {r['f1_macro']:.3f}"
-                )
-    if (d / "README.md").is_file():
-        typer.echo(f"cartão do modelo: {d / 'README.md'}")
+    for mod in (citecheck, resumocheck):
+        d = mod.model_dir()
+        reason = mod.unavailable_reason()
+        typer.echo(f"modelo: {mod.MODEL_NAME} — {DESCRICAO[mod.MODEL_NAME]}")
+        typer.echo(f"  pasta:  {d}")
+        typer.echo(f"  estado: {'pronto' if reason is None else reason}")
+        card = d / "errei_avaliacao.json"
+        if card.is_file():
+            data = _json.loads(card.read_text(encoding="utf-8"))
+            for lg in ("en", "pt"):
+                r = data.get(f"afirmacao_{lg}", {})
+                if r:
+                    typer.echo(
+                        f"  teste (afirmação em {lg}): acurácia {r['acuracia']:.3f}, "
+                        f"F1 macro {r['f1_macro']:.3f}"
+                    )
+        card = d / "errei_resumo.json"
+        if card.is_file():
+            data = _json.loads(card.read_text(encoding="utf-8"))
+            for lg in ("en", "pt"):
+                r = (data.get("teste", {}).get(lg) or {}).get("modelo", {}).get("f1", {})
+                if r:
+                    typer.echo(
+                        f"  teste ({lg}): F1 macro {r['macro']:.3f}, acurácia {r['acuracia']:.3f}"
+                    )
+        if (d / "README.md").is_file():
+            typer.echo(f"  cartão do modelo: {d / 'README.md'}")
 
 
-@modelo_app.command("baixar", help="Baixa o modelo publicado na release do GitHub.")
+NomeOpt = Annotated[
+    str | None,
+    typer.Option("--nome", help="errei-cita-v1 ou errei-resumo-v1 (padrão: todos)."),
+]
+
+
+@modelo_app.command("baixar", help="Baixa os modelos publicados nas releases do GitHub.")
 def modelo_baixar(
     versao: Annotated[
-        str | None, typer.Option("--versao", help="Tag da release (padrão: a mais recente).")
+        str | None, typer.Option("--versao", help="Tag da release (padrão: 'modelos').")
     ] = None,
     force: Annotated[bool, typer.Option("--force", help="Substitui o instalado.")] = False,
+    nome: NomeOpt = None,
 ) -> None:
-    from errei.modelo_dist import ModelDownloadError, baixar
+    from errei.modelo_dist import MODELOS, ModelDownloadError, baixar
 
-    try:
-        dest = baixar(versao, force=force)
-    except ModelDownloadError as exc:
-        _err(str(exc))
-        raise typer.Exit(2) from exc
-    typer.echo(f"modelo instalado em {dest}")
+    nomes = [nome] if nome else list(MODELOS)
+    falhas = 0
+    for n in nomes:
+        try:
+            dest = baixar(versao, force=force, nome=n)
+        except ModelDownloadError as exc:
+            _err(f"{n}: {exc}")
+            falhas += 1
+            continue
+        typer.echo(f"{n} instalado em {dest}")
+    if falhas:
+        raise typer.Exit(2)
 
 
 @modelo_app.command("instalar", help="Copia um modelo treinado (pasta) para o local padrão.")
 def modelo_instalar(
     origem: Annotated[Path, typer.Argument(help="Pasta com config.json e pesos.")],
     force: Annotated[bool, typer.Option("--force", help="Substitui o instalado.")] = False,
+    nome: Annotated[
+        str, typer.Option("--nome", help="errei-cita-v1 (padrão) ou errei-resumo-v1.")
+    ] = "errei-cita-v1",
 ) -> None:
     import shutil
 
-    from errei import citecheck
+    from errei.modelo_dist import MODELOS
 
+    if nome not in MODELOS:
+        _err(f"modelo desconhecido: {nome} (opções: {', '.join(MODELOS)})")
+        raise typer.Exit(2)
     if not (origem / "config.json").is_file():
         _err(f"{origem} não parece um modelo (falta config.json)")
         raise typer.Exit(2)
-    dest = citecheck.model_dir()
+    dest = MODELOS[nome]()
     if dest.exists():
         if not force:
             _err(f"{dest} já existe (use --force)")

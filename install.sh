@@ -43,7 +43,7 @@ errei installer
 
 Instalar:
   curl -fsSL https://raw.githubusercontent.com/${REPO}/main/install.sh | sh
-Instalar também o modelo de citações errei-cita (torch CPU, ~1 GB):
+Instalar também os modelos locais errei-cita e errei-resumo (torch CPU, ~1,5 GB):
   curl -fsSL https://raw.githubusercontent.com/${REPO}/main/install.sh | sh -s -- --modelo
 Versão específica:
   ... | sh -s -- --versao v0.2.0
@@ -176,11 +176,11 @@ ln -sf "${VENV}/bin/errei" "${BIN_DIR}/${BINARY}"
 ok "Comando: ${BIN_DIR}/${BINARY}"
 
 if [ "$WITH_MODEL" = "1" ]; then
-    info "Baixando o modelo errei-cita da release ${VERSION}..."
+    info "Baixando os modelos locais (errei-cita, errei-resumo)..."
     if ERREI_REPO="${REPO}" "${VENV}/bin/errei" modelo baixar --versao "${VERSION}"; then
-        ok "Modelo instalado"
+        ok "Modelos instalados"
     else
-        warn "Modelo não publicado nesta release; treine com treino/rodar_tudo.sh (veja o README)"
+        warn "Algum modelo não foi baixado; o errei funciona sem eles (veja 'errei modelo info')"
     fi
 fi
 

@@ -1,21 +1,21 @@
 #!/usr/bin/env bash
-# Empacota o modelo treinado para anexar à release do GitHub.
-# Uso: scripts/empacotar-modelo.sh [pasta-do-modelo] [tag]
-#   ex.: scripts/empacotar-modelo.sh treino/modelos/errei-cita-v1 v0.2.0
-# Depois: gh release upload <tag> dist/errei-cita-v1.tar.gz dist/sha256sums-modelo.txt
-# (e acrescente a linha do modelo ao sha256sums.txt da release, se quiser verificação)
+# Empacota um modelo treinado para anexar à release fixa "modelos" do GitHub.
+# Uso: scripts/empacotar-modelo.sh [pasta-do-modelo]
+#   ex.: scripts/empacotar-modelo.sh treino/modelos/errei-resumo-v1
+# Depois: gh release upload modelos dist/<nome>.tar.gz dist/sha256sums-modelo.txt --clobber
 set -euo pipefail
 SRC="${1:-treino/modelos/errei-cita-v1}"
-TAG="${2:-}"
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT"
+NAME="$(basename "$SRC")"
 test -f "$SRC/config.json" || { echo "erro: $SRC não tem config.json" >&2; exit 1; }
-test -f "$SRC/README.md" || echo "aviso: sem cartão do modelo (rode treino/finalizar.py)" >&2
+test -f "$SRC/README.md" || echo "aviso: sem cartão do modelo (README.md)" >&2
 mkdir -p dist
-tar -C "$(dirname "$SRC")" -czf dist/errei-cita-v1.tar.gz \
-  --exclude='*.log' "$(basename "$SRC")"
-(cd dist && sha256sum errei-cita-v1.tar.gz > sha256sums-modelo.txt && cat sha256sums-modelo.txt)
-echo "[OK] dist/errei-cita-v1.tar.gz ($(du -h dist/errei-cita-v1.tar.gz | cut -f1))"
-if [ -n "$TAG" ]; then
-  echo "publicar: gh release upload $TAG dist/errei-cita-v1.tar.gz dist/sha256sums-modelo.txt"
-fi
+tar -C "$(dirname "$SRC")" -czf "dist/$NAME.tar.gz" --exclude='*.log' "$NAME"
+# sha256sums-modelo.txt acumula uma linha por modelo
+touch dist/sha256sums-modelo.txt
+grep -v " $NAME.tar.gz\$" dist/sha256sums-modelo.txt > dist/.sums.tmp || true
+(cd dist && sha256sum "$NAME.tar.gz" >> .sums.tmp && sort -k2 .sums.tmp > sha256sums-modelo.txt \
+  && rm .sums.tmp && cat sha256sums-modelo.txt)
+echo "[OK] dist/$NAME.tar.gz ($(du -h "dist/$NAME.tar.gz" | cut -f1))"
+echo "publicar: gh release upload modelos dist/$NAME.tar.gz dist/sha256sums-modelo.txt --clobber"

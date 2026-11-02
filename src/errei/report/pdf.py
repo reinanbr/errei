@@ -419,12 +419,31 @@ def write_pdf(report: Report, path: Path) -> None:
         story.append(P("• " + t(lim), "p"))
         story.append(Spacer(1, 2))
 
+    from errei.report.base import base_lines, footer_text
+
+    base = m.get("base") or {}
+    if base:
+        story.append(P("Base do relatório", "h1"))
+        story.append(
+            table(
+                [[P(f"<b>{t(k)}</b>"), P(t(v))] for k, v in base_lines(base)],
+                [3.6 * cm, W - 3.6 * cm],
+                ["item", "fundamento"],
+            )
+        )
+    rodape = footer_text(base) if base else f"errei {m.get('version')}"
+
     def footer(canvas: Any, doc: Any) -> None:
         canvas.saveState()
-        canvas.setFont(font, 7)
+        canvas.setFont(font, 6.5)
         canvas.setFillColor(colors.HexColor("#777777"))
-        canvas.drawString(1.7 * cm, 1.0 * cm, f"errei {m.get('version')} — {m.get('date')}")
-        canvas.drawRightString(A4[0] - 1.7 * cm, 1.0 * cm, f"página {doc.page}")
+        canvas.drawString(1.7 * cm, 1.0 * cm, rodape[:150])
+        canvas.drawString(
+            1.7 * cm,
+            0.7 * cm,
+            f"gerado em {m.get('date')} · somente leitura: o trabalho não foi alterado",
+        )
+        canvas.drawRightString(A4[0] - 1.7 * cm, 0.7 * cm, f"página {doc.page}")
         canvas.restoreState()
 
     path.parent.mkdir(parents=True, exist_ok=True)

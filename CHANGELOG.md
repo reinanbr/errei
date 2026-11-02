@@ -3,6 +3,27 @@
 Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/); versões
 seguem [SemVer](https://semver.org/lang/pt-BR/).
 
+## [0.5.0] - 2026-11-02
+
+### Adicionado
+
+- "Base do relatório": rodapé em cada página do PDF (versão, normas, fontes) e seção final
+  no PDF, no Markdown, na lista de afazeres e em `meta.base` no JSON. Lista normas ABNT,
+  fontes realmente consultadas, modelos, métodos, Qualis e hash do projeto.
+- Modelo **errei-resumo-v1** (Apache-2.0): papel retórico das frases do resumo (contexto,
+  objetivo, método, resultado), treinado sobre o CSAbstruct com tradução pt-BR
+  (`treino/resumo/`).
+- Regra `ABNT-RESUMO-005` (NBR 6028:2021): o resumo e o abstract trazem objetivo, método,
+  resultados e conclusões? Funciona sem o modelo (palavras-chave, como sugestão) e com ele
+  (aviso).
+- `errei modelo baixar|instalar --nome`, `errei modelo info` com todos os modelos. Os pacotes
+  ficam na release fixa `modelos` e não são mais reenviados a cada versão.
+
+### Alterado
+
+- A declaração de uso de IA na lista de afazeres é opcional: aparece como informação (ℹ️) e
+  não vira pendência. A IA online continua desligada por padrão e nunca é o primeiro recurso.
+
 ## [0.4.0] - 2026-11-02
 
 ### Adicionado

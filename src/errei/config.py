@@ -26,7 +26,13 @@ DEFAULTS: dict[str, Any] = {
     "ignore": {"codes": [], "paths": []},
     "latex": {"todo_markers": ["TODO", "FIXME", "XXX", "REVISAR"]},
     "refs": {"require_doi_types": ["article"], "match_threshold": 85},
-    "abnt": {"resumo_min": 150, "resumo_max": 250, "keywords_min": 3, "keywords_max": 5},
+    "abnt": {
+        "resumo_min": 150,
+        "resumo_max": 250,
+        "keywords_min": 3,
+        "keywords_max": 5,
+        "estrutura_resumo": True,
+    },
     "ptbr": {
         "languagetool": True,
         "spellcheck": True,

@@ -1,9 +1,15 @@
-"""Distribuição do modelo errei-cita como asset de release do GitHub.
+"""Distribuição dos modelos locais do errei como assets de release do GitHub.
 
-O tarball ``errei-cita-v1.tar.gz`` (gerado por ``scripts/empacotar-modelo.sh``) é
-anexado manualmente à release, já que os pesos são grandes e têm licença própria
-(CC BY-NC 2.0). ``errei modelo baixar`` o busca, confere o sha256 e extrai com
-proteção contra caminhos maliciosos.
+Modelos:
+
+* ``errei-cita-v1``: atribuição de citações (pesos CC BY-NC 2.0, herdada do SciFact);
+* ``errei-resumo-v1``: papel das frases do resumo, NBR 6028 (Apache-2.0).
+
+Os tarballs (gerados por ``scripts/empacotar-modelo.sh``) ficam na release fixa
+``modelos``, para não serem reenviados a cada versão do errei. Por compatibilidade,
+também são procurados na release informada em ``--versao`` e na mais recente.
+``errei modelo baixar`` confere o sha256 e extrai com proteção contra caminhos
+maliciosos.
 """
 
 from __future__ import annotations
@@ -14,10 +20,21 @@ import os
 import shutil
 import tarfile
 import tempfile
+from collections.abc import Callable
 from pathlib import Path
 
-from errei.citecheck import MODEL_NAME, model_dir
+from errei import citecheck, resumocheck
 
+MODELOS: dict[str, Callable[[], Path]] = {
+    citecheck.MODEL_NAME: citecheck.model_dir,
+    resumocheck.MODEL_NAME: resumocheck.model_dir,
+}
+DESCRICAO = {
+    citecheck.MODEL_NAME: "atribuição de citações (frase do artigo × resumo da obra)",
+    resumocheck.MODEL_NAME: "papel das frases do resumo: objetivo, método, resultados (NBR 6028)",
+}
+MODELOS_TAG = os.environ.get("ERREI_MODELOS_TAG", "modelos")
+MODEL_NAME = citecheck.MODEL_NAME  # compatibilidade
 ASSET = f"{MODEL_NAME}.tar.gz"
 MAX_BYTES = 2 * 1024 * 1024 * 1024
 
@@ -52,19 +69,36 @@ def _safe_extract(data: bytes, dest: Path) -> None:
             tar.extractall(dest)
 
 
-def baixar(versao: str | None = None, *, force: bool = False) -> Path:
+def _bases(versao: str | None) -> list[str]:
+    if os.environ.get("ERREI_RELEASE_URL"):
+        return [release_base(None)]
+    out = [release_base(MODELOS_TAG)]
+    if versao:
+        out.append(release_base(versao))
+    out.append(release_base(None))
+    return list(dict.fromkeys(out))
+
+
+def baixar(versao: str | None = None, *, force: bool = False, nome: str = MODEL_NAME) -> Path:
     try:
         import httpx
     except ModuleNotFoundError as exc:
         raise ModelDownloadError("requer o extra: pip install 'errei[online]'") from exc
-    dest = model_dir()
+    if nome not in MODELOS:
+        raise ModelDownloadError(f"modelo desconhecido: {nome} (opções: {', '.join(MODELOS)})")
+    asset = f"{nome}.tar.gz"
+    dest = MODELOS[nome]()
     if (dest / "config.json").is_file() and not force:
         raise ModelDownloadError(f"já instalado em {dest} (use --force)")
-    base = release_base(versao)
     with httpx.Client(follow_redirects=True, timeout=60) as client:
-        r = client.get(f"{base}/{ASSET}")
-        if r.status_code != 200:
-            raise ModelDownloadError(f"{ASSET} não encontrado em {base} (HTTP {r.status_code})")
+        base, r, tried = "", None, []
+        for base in _bases(versao):
+            r = client.get(f"{base}/{asset}")
+            tried.append(f"{base} (HTTP {r.status_code})")
+            if r.status_code == 200:
+                break
+        if r is None or r.status_code != 200:
+            raise ModelDownloadError(f"{asset} não encontrado em: " + "; ".join(tried))
         data = r.content
         if len(data) > MAX_BYTES:
             raise ModelDownloadError("pacote do modelo grande demais")
@@ -77,7 +111,7 @@ def baixar(versao: str | None = None, *, force: bool = False) -> Path:
                     if len(parts) == 2:
                         expected.setdefault(parts[1], parts[0])
     digest = hashlib.sha256(data).hexdigest()
-    if ASSET in expected and expected[ASSET] != digest:
+    if asset in expected and expected[asset] != digest:
         raise ModelDownloadError("checksum do modelo não confere")
     with tempfile.TemporaryDirectory() as tmp:
         _safe_extract(data, Path(tmp))

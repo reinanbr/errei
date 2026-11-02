@@ -144,6 +144,38 @@ Os pesos ficam em `~/.local/share/errei/modelos/errei-cita-v1` (ou `$ERREI_MODEL
 código do errei continua MIT. Sem o modelo, a existência das obras continua sendo verificada
 e o relatório informa que a validação das atribuições foi pulada.
 
+### O modelo errei-resumo
+
+A NBR 6028:2021 pede que o resumo ressalte **objetivo, método, resultados e conclusões**. A
+regra `ABNT-RESUMO-005` classifica o papel de cada frase do resumo e do abstract e aponta o
+que falta, listando cada frase com o papel estimado.
+
+- Com o modelo **errei-resumo-v1** instalado, o papel vem dele. É um classificador
+  multilíngue de 6 camadas, treinado para o errei sobre o CSAbstruct (AllenAI, Apache-2.0)
+  com tradução para pt-BR. Os pesos têm **licença Apache-2.0**.
+- Sem o modelo, o papel é estimado por palavras-chave e posição, e o achado sai só como
+  sugestão.
+- O CSAbstruct não separa conclusão de resultado, por isso a conclusão é detectada por
+  marcadores ("conclui-se", "portanto", "os resultados indicam").
+
+Para treinar (CPU, ~3 h com a tradução):
+
+```bash
+sh treino/resumo/rodar.sh              # baixa o CSAbstruct, traduz, treina, avalia e instala
+cat treino/dados/csabstruct/progresso.txt
+```
+
+### Baixar os modelos
+
+```bash
+errei modelo baixar                    # todos (errei-cita-v1 e errei-resumo-v1)
+errei modelo baixar --nome errei-resumo-v1
+errei modelo info                      # onde estão e métricas de teste
+```
+
+Os pacotes ficam na release fixa `modelos` do GitHub, com sha256 conferido. Nenhum modelo é
+obrigatório: sem eles o errei roda normalmente e informa o que foi pulado.
+
 ### Ignorando achados
 
 ```latex
@@ -213,6 +245,23 @@ Ao rodar de novo sobre o mesmo arquivo e no mesmo nível, os itens que sumiram a
 ou aceite. A lista é um relatório: o errei nunca altera o trabalho, e se recusa a gravá-la
 sobre `.tex`/`.bib`.
 
+## Base do relatório
+
+Todo relatório informa em que se apoiou:
+
+- no **rodapé de cada página do PDF**: versão, normas e fontes consultadas;
+- numa seção final **"Base do relatório"** (PDF, Markdown, lista de afazeres e `meta.base`
+  no JSON), com estes itens:
+  - versão e data;
+  - arquivo principal e hash do projeto analisado;
+  - verificadores executados;
+  - normas ABNT usadas;
+  - fontes consultadas de fato ("nenhuma" quando a execução é offline);
+  - modelos (errei-cita, errei-resumo e, se usado, o Gemini; senão "IA online: não
+    utilizada");
+  - métodos, como o Flesch adaptado de Martins et al. (1996), MinHash e os pesos do índice;
+  - o CSV do Qualis, quando houver.
+
 ## Completude do trabalho
 
 O verificador `completude` diz **o que falta** para o trabalho estar completo, segundo a
@@ -247,6 +296,10 @@ ou instituição/editora/cidade brasileira, mesmo que o título esteja em inglê
 inserido no `.bib`: leia a obra antes de citá-la.
 
 ### IA online (Gemini), opcional
+
+A IA online é **opcional**: fica desligada por padrão, não é necessária para nenhuma
+verificação e nunca é o primeiro recurso. O errei faz tudo localmente e com bases
+bibliográficas abertas. O Gemini só entra se você pedir com `--ia-online`.
 
 ```bash
 export GEMINI_API_KEY=...        # ou ERREI_GEMINI_KEY / GEMINI_KEY / GOOGLE_API_KEY
@@ -411,6 +464,7 @@ possíveis falsos positivos e negativos.
 | `ABNT-RESUMO-002` | aviso | Resumo fora da extensão recomendada | determinística |
 | `ABNT-RESUMO-003` | aviso | Resumo com mais de um parágrafo | determinística |
 | `ABNT-RESUMO-004` | sugestão | Citação ou fórmula no resumo | determinística |
+| `ABNT-RESUMO-005` | aviso | Resumo sem objetivo, método, resultados ou conclusões | heurística |
 | `ABNT-STYLE-001` | info | Estilo de citação detectado | determinística |
 | `ABNT-STYLE-002` | aviso | Estilo bibliográfico não ABNT | determinística |
 | `COMP-IA-001` | info | Orientações para completar (IA online) | heurística |

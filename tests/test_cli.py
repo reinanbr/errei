@@ -121,9 +121,9 @@ def test_modelo_baixar(tmp_path: Path, monkeypatch, respx_mock) -> None:  # type
     respx_mock.get("https://rel.example.org/v9/sha256sums.txt").mock(
         return_value=httpx.Response(404)
     )
-    assert cli("modelo", "baixar").exit_code == 0
+    assert cli("modelo", "baixar", "--nome", "errei-cita-v1").exit_code == 0
     assert (tmp_path / "m" / "config.json").is_file()
-    assert cli("modelo", "baixar").exit_code == 2  # já instalado
+    assert cli("modelo", "baixar", "--nome", "errei-cita-v1").exit_code == 2  # já instalado
 
 
 def test_modelo_baixar_rejects_bad_archives(tmp_path: Path, monkeypatch, respx_mock) -> None:  # type: ignore[no-untyped-def]
@@ -140,11 +140,37 @@ def test_modelo_baixar_rejects_bad_archives(tmp_path: Path, monkeypatch, respx_m
     respx_mock.get("https://rel.example.org/v9/sha256sums-modelo.txt").mock(
         return_value=httpx.Response(404)
     )
-    res = cli("modelo", "baixar")
+    res = cli("modelo", "baixar", "--nome", "errei-cita-v1")
     assert res.exit_code == 2 and not (tmp_path.parent / "fora.txt").exists()
     ok = _tarball({"config.json": b"{}"})
     route.mock(return_value=httpx.Response(200, content=ok))
     respx_mock.get("https://rel.example.org/v9/sha256sums.txt").mock(
         return_value=httpx.Response(200, text="0" * 64 + "  errei-cita-v1.tar.gz\n")
     )
-    assert cli("modelo", "baixar").exit_code == 2  # checksum não confere
+    assert cli("modelo", "baixar", "--nome", "errei-cita-v1").exit_code == 2  # checksum não confere
+
+
+def test_modelo_baixar_all_from_fixed_release(tmp_path: Path, monkeypatch, respx_mock) -> None:  # type: ignore[no-untyped-def]
+    """Sem --nome, baixa todos os modelos; procura primeiro na release fixa 'modelos'."""
+    import hashlib
+
+    import httpx
+
+    monkeypatch.setenv("ERREI_MODEL_DIR", str(tmp_path / "cita"))
+    monkeypatch.setenv("ERREI_RESUMO_MODEL_DIR", str(tmp_path / "resumo"))
+    monkeypatch.setenv("ERREI_REPO", "dono/errei")
+    base = "https://github.com/dono/errei/releases/download/modelos"
+    sums = []
+    for nome in ("errei-cita-v1", "errei-resumo-v1"):
+        tb = _tarball({f"{nome}/config.json": b"{}"})
+        sums.append(f"{hashlib.sha256(tb).hexdigest()}  {nome}.tar.gz")
+        respx_mock.get(f"{base}/{nome}.tar.gz").mock(return_value=httpx.Response(200, content=tb))
+    respx_mock.get(f"{base}/sha256sums-modelo.txt").mock(
+        return_value=httpx.Response(200, text="\n".join(sums) + "\n")
+    )
+    respx_mock.get(f"{base}/sha256sums.txt").mock(return_value=httpx.Response(404))
+    res = cli("modelo", "baixar", "--versao", "v9.9.9")
+    assert res.exit_code == 0, res.output
+    assert (tmp_path / "cita" / "config.json").is_file()
+    assert (tmp_path / "resumo" / "config.json").is_file()
+    assert "errei-resumo-v1" in cli("modelo", "info").output
