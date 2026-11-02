@@ -892,12 +892,23 @@ def cite_context(project: Project, use: Any) -> CiteContext | None:
     sent = next((x for x in sentences(para.text) if x.start <= rel < x.end + 1), None)
     if sent is None:
         return None
-    chars = list(para.text)
-    for c in ct.cites:
-        if para.start <= c.start < para.end:
-            for i in range(c.start - para.start, min(c.end - para.start, len(chars))):
-                chars[i] = " "
-    cleaned = "".join(chars)[sent.start : sent.end]
+    # citações parentéticas somem; textuais (\citeonline, \citet…) viram "o estudo",
+    # para a frase continuar gramatical para o modelo
+    from errei.latex.extract import CITE_AUTHOR, CITE_TEXT
+
+    text = para.text
+    pieces: list[str] = []
+    pos = sent.start
+    for c in sorted(ct.cites, key=lambda c: c.start):
+        cs, ce = c.start - para.start, c.end - para.start
+        if ce <= sent.start or cs >= sent.end:
+            continue
+        pieces.append(text[pos : max(pos, cs)])
+        if c.macro in CITE_TEXT or c.macro in CITE_AUTHOR:
+            pieces.append("o estudo")
+        pos = max(pos, min(ce, sent.end))
+    pieces.append(text[pos : sent.end])
+    cleaned = "".join(pieces)
     cleaned = re.sub(r"\s+([,.;:)])", r"\1", " ".join(cleaned.split()))
     cleaned = re.sub(r"\(\s*\)", "", cleaned).strip(" ,;")
     quote = ""

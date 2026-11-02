@@ -248,3 +248,12 @@ def test_progress_messages(tmp_path: Path, respx_mock: respx.MockRouter, fake_mo
     )
     assert "verificando referência 1/1 online: burn" in msgs
     assert any("validando 3 citação(ões) de burn" in m for m in msgs)
+
+
+def test_textual_citation_keeps_sentence_readable(tmp_path: Path) -> None:
+    from errei.checkers.refs import cite_context
+
+    p = load_project(project(tmp_path, "Segundo \\citeonline{burn}, a aspirina reduz o risco.\n"))
+    use = next(u for u in p.cite_uses() if u.key == "burn")
+    c = cite_context(p, use)
+    assert c is not None and c.claim == "Segundo o estudo, a aspirina reduz o risco."
