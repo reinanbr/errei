@@ -178,6 +178,12 @@ def elementos(papeis: list[Papel]) -> dict[str, bool]:
     """Quais elementos da NBR 6028 aparecem no resumo."""
     n = len(papeis)
     tem = {k: any(p.papel == k for p in papeis) for k in ("objetivo", "metodo", "resultado")}
+    # híbrido: o CSAbstruct costuma rotular "neste trabalho propomos X" como método, então o
+    # objetivo também conta quando há marcador de objetivo na primeira parte do resumo
+    # (no teste em pt: presença de objetivo 55% só modelo → 63% híbrido)
+    tem["objetivo"] = tem["objetivo"] or any(
+        RX["objetivo"].search(p.frase) and (i + 0.5) / n <= 0.7 for i, p in enumerate(papeis)
+    )
     tem["conclusao"] = any(
         CONCL.search(p.frase) and (p.papel == "resultado" or i >= n - 2)
         for i, p in enumerate(papeis)
