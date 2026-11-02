@@ -20,6 +20,8 @@ class Report:
     suppressed: int = 0
     # obras citadas buscadas online + validação de cada atribuição (ver checkers/refs.py)
     references: list[dict[str, Any]] = field(default_factory=list)
+    # projeto analisado (para a lista de afazeres); não vai para JSON/MD
+    project: Any = field(default=None, repr=False, compare=False)
 
     def by_severity(self) -> dict[Severity, int]:
         c = Counter(f.severity for f in self.findings)

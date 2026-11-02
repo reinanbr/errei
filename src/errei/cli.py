@@ -34,6 +34,13 @@ class OutFormat(str, Enum):
     pdf = "pdf"
 
 
+class NivelAlvo(str, Enum):
+    tcc = "tcc"
+    mestrado = "mestrado"
+    doutorado = "doutorado"
+    a1 = "a1"
+
+
 class FailOn(str, Enum):
     error = "error"
     warning = "warning"
@@ -130,6 +137,22 @@ def audit(
             "Google. Chave em GEMINI_API_KEY. A IA nunca escreve no trabalho.",
         ),
     ] = False,
+    todo: Annotated[
+        Path | None,
+        typer.Option(
+            "--todo",
+            help="Grava a lista de afazeres (Markdown) neste arquivo. Com --pdf, é gerada "
+            "automaticamente ao lado do PDF (<nome>-afazeres.md).",
+        ),
+    ] = None,
+    nivel: Annotated[
+        NivelAlvo | None,
+        typer.Option(
+            "--nivel",
+            help="Nível que o trabalho deve alcançar na lista de afazeres: tcc, mestrado, "
+            "doutorado ou a1 (Scopus percentil ≥ 92 / Qualis A1–A2; padrão).",
+        ),
+    ] = None,
     ia_modelo: Annotated[
         str | None,
         typer.Option("--ia-modelo", help="Modelo Gemini (padrão: gemini-flash-lite-latest)."),
@@ -138,6 +161,8 @@ def audit(
     overrides: dict[str, Any] = {}
     if tipo:
         overrides["completude"] = {"tipo": tipo}
+    if nivel is not None:
+        overrides["todo"] = {"nivel": nivel.value}
     if ia_online:
         overrides["ia_online"] = {"enabled": True}
         if ia_modelo:
@@ -188,6 +213,7 @@ def audit(
             "texto_completo": texto_completo,
             "tipo": tipo,
             "ia_online": ia_online,
+            "nivel": str(config.get("todo", "nivel", "a1")),
         }
         if ia_online and not config.online:
             raise ConfigError("--ia-online requer --online (a IA roda em servidor externo)")
@@ -213,6 +239,25 @@ def audit(
             _err(f"não foi possível gravar {pdf_target}: {exc}")
             raise typer.Exit(2) from exc
         typer.echo(f"relatório PDF gravado em {pdf_target}", err=True)
+    todo_target = todo
+    if todo_target is None and pdf_target is not None:
+        todo_target = pdf_target.with_name(pdf_target.stem + "-afazeres.md")
+    if todo_target is not None:
+        from errei.report import todo as todo_mod
+
+        nivel_key = str(config.get("todo", "nivel", "a1") or "a1")
+        if nivel_key not in todo_mod.NIVEIS:
+            _err(f"nível desconhecido: {nivel_key} (use tcc, mestrado, doutorado ou a1)")
+            raise typer.Exit(2)
+        try:
+            todo_mod.write(report, todo_target, nivel_key)
+        except (OSError, ValueError) as exc:
+            _err(f"não foi possível gravar {todo_target}: {exc}")
+            raise typer.Exit(2) from exc
+        typer.echo(
+            f"lista de afazeres ({todo_mod.NIVEIS[nivel_key].nome}) gravada em {todo_target}",
+            err=True,
+        )
     if fmt is OutFormat.pdf:
         # PDF como formato principal: mostra o resumo na tela também
         render.render_term(report, render.make_console(force_color=color), summary_only=True)

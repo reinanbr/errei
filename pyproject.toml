@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "errei"
-version = "0.3.0"
+version = "0.4.0"
 description = "Auditor de artigos científicos em LaTeX (pt-BR): escrita, ABNT, referências, similaridade, indícios de IA e prontidão para periódicos."
 readme = "README.md"
 license = "MIT"

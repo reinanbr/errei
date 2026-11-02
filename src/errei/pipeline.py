@@ -191,4 +191,5 @@ def run(
         notes=project.notes,
         suppressed=suppressed,
         references=list(ctx.shared.get("referencias", [])),
+        project=project,
     )

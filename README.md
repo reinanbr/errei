@@ -172,6 +172,47 @@ flags da linha de comando. Rode `errei init` para gerar um arquivo comentado.
 > usuário ou da linha de comando, **nunca** do `.errei.toml` da pasta do artigo, que pode vir
 > de terceiros. O conteúdo do artigo nunca é executado nem passado a `latex` ou ao shell.
 
+## Lista de afazeres por nível
+
+Além do relatório, o errei gera um **checklist em Markdown** com o que corrigir e
+aperfeiçoar, calibrado pelo nível que o trabalho deve alcançar:
+
+```bash
+errei . --pdf relatorio.pdf                    # gera também relatorio-afazeres.md
+errei . --todo afazeres.md --nivel mestrado    # só a lista
+```
+
+| `--nivel` | meta | referências (artigo/monografia) | últimos 5 anos | DOI | prontidão | avisos |
+|---|---|---|---|---|---|---|
+| `tcc` | TCC aprovado pela banca | ≥ 15 / 20 | ≥ 30% | ≥ 30% | ≥ 50 | ≤ 20 |
+| `mestrado` | dissertação ou artigo Qualis B1–A4 | ≥ 25 / 50 | ≥ 40% | ≥ 50% | ≥ 65 | ≤ 10 |
+| `doutorado` | tese ou artigo Qualis A2–A1 | ≥ 35 / 100 | ≥ 50% | ≥ 70% | ≥ 75 | ≤ 5 |
+| `a1` (padrão) | Scopus percentil ≥ 92 ou Qualis A1–A2 | ≥ 40 / 100 | ≥ 50% | ≥ 85% | ≥ 85 | 0 |
+
+A lista traz:
+
+- **Metas do nível**: tabela ✅/❌ com referências, extensão do texto, erros e avisos,
+  índice de prontidão, elementos obrigatórios, abstract e elementos de conteúdo (objetivo,
+  pergunta de pesquisa, limitações, contribuição, trabalhos futuros). Nos níveis altos
+  entram também as declarações que os periódicos exigem: disponibilidade de dados, conflito
+  de interesses, contribuição dos autores (CRediT), financiamento, uso de IA e aprovação
+  ética (esta só quando há participantes humanos).
+- **Itens priorizados** em `- [ ]`, por área, cada um com arquivo:linha, como resolver,
+  trecho e código da regra:
+  - **P0** bloqueia a entrega;
+  - **P1** é necessário para o nível (em doutorado e a1, as sugestões de escrita, ABNT e
+    referências sobem para P1);
+  - **P2** é aperfeiçoamento.
+
+  Ocorrências repetidas do mesmo problema viram um item só, com a lista de locais.
+- **Revisão humana**: o que o errei não verifica, como alinhamento objetivo ↔ método ↔
+  conclusão, escolha do periódico, template e carta ao editor.
+
+Ao rodar de novo sobre o mesmo arquivo e no mesmo nível, os itens que sumiram aparecem em
+**Resolvidos**. As metas são referências usuais de cada nível, não garantia de aprovação
+ou aceite. A lista é um relatório: o errei nunca altera o trabalho, e se recusa a gravá-la
+sobre `.tex`/`.bib`.
+
 ## Completude do trabalho
 
 O verificador `completude` diz **o que falta** para o trabalho estar completo, segundo a

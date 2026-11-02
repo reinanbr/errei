@@ -3,6 +3,22 @@
 Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/); versões
 seguem [SemVer](https://semver.org/lang/pt-BR/).
 
+## [0.4.0] - 2026-11-02
+
+### Adicionado
+
+- Lista de afazeres em Markdown (`--todo ARQ.md`, gerada automaticamente ao lado do PDF
+  como `<nome>-afazeres.md`): checklist priorizado (P0 bloqueadores, P1 necessários para o
+  nível, P2 aperfeiçoamento), agrupado por área, com arquivo:linha, como resolver e código
+  da regra.
+- `--nivel tcc|mestrado|doutorado|a1` (padrão `a1`: Scopus percentil ≥ 92 / Qualis A1–A2),
+  também `[todo] nivel` no config. Ajusta as metas (nº e atualidade das referências, DOI,
+  extensão, índice de prontidão, avisos tolerados), a prioridade das sugestões e as
+  declarações exigidas: dados, conflito de interesses, CRediT, financiamento, uso de IA e
+  ética quando há participantes humanos.
+- Ao regerar a lista no mesmo nível, os itens que deixaram de aparecer vão para
+  "Resolvidos".
+
 ## [0.3.0] - 2026-11-02
 
 ### Adicionado

@@ -20,6 +20,9 @@ Camada fina sobre a CLI `errei`. Não reimplemente verificações: rode a CLI e 
      `--periodico`, `--qualis-data`, `--area`.
    - **Não** adicione `--online` por conta própria: ele envia títulos e frases a APIs
      públicas (Crossref, OpenAlex, Semantic Scholar, arXiv). Pergunte antes.
+   - Se o usuário quiser uma lista de tarefas, acrescente `--todo "<pasta>/errei-afazeres.md"`
+     e `--nivel` conforme a meta dele (`tcc`, `mestrado`, `doutorado` ou `a1` = Scopus
+     p≥92 / Qualis A1–A2, o padrão). Com `--pdf` a lista é gerada ao lado do PDF.
    - Se o usuário quiser o relatório em PDF, acrescente `--pdf "<pasta>/errei-relatorio.pdf"`
      (ou o caminho que ele indicar) e informe onde ficou.
    - Com `--online`, o JSON traz `references[]`: obra encontrada (título, autores, ano,

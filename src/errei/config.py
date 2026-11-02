@@ -46,6 +46,7 @@ DEFAULTS: dict[str, Any] = {
     "ia": {"min_words": 60, "threshold": 0.6, "detector": ""},
     "periodico": {"qualis_csv": "", "qualis_data": "", "periodico": "", "area": ""},
     "completude": {"tipo": "auto"},
+    "todo": {"nivel": "a1"},
     "nacionais": {"enabled": True, "max_refs": 8, "max_sugestoes": 3},
     # IA online (Gemini): só vale no config do USUÁRIO ou em flags, nunca no .errei.toml
     "ia_online": {"enabled": False, "modelo": "", "api_key": ""},
@@ -96,6 +97,9 @@ area = ""          # área de avaliação, ex.: "CIÊNCIA DA COMPUTAÇÃO"
 
 [completude]
 tipo = "auto"      # artigo | monografia | tcc | dissertacao | tese
+
+[todo]
+nivel = "a1"       # lista de afazeres: tcc | mestrado | doutorado | a1 (Scopus ≥ p92 / A1–A2)
 
 [nacionais]        # com --online: obras brasileiras para citações estrangeiras
 enabled = true
