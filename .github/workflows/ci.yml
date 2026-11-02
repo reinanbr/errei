@@ -33,7 +33,7 @@ jobs:
 
       - name: Install (all extras + dev; sem o modelo, que é pesado)
         run: |
-          uv venv
+          uv venv --clear
           uv pip install -e '.[all,dev]'
 
       - name: Lint
