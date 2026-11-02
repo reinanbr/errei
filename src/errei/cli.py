@@ -24,7 +24,7 @@ app = typer.Typer(
     context_settings={"help_option_names": ["-h", "--help"]},
 )
 
-SUBCOMMANDS = {"audit", "init", "doctor", "explain", "modelo"}
+SUBCOMMANDS = {"audit", "init", "doctor", "explain", "modelo", "cache"}
 
 
 class OutFormat(str, Enum):
@@ -112,6 +112,14 @@ def audit(
         bool,
         typer.Option("--resumo", help="Na tela, só os principais problemas e melhorias."),
     ] = False,
+    sem_cache: Annotated[
+        bool,
+        typer.Option(
+            "--sem-cache",
+            help="Com --online, ignora o cache e consulta as fontes de novo (o resultado "
+            "novo é gravado no cache).",
+        ),
+    ] = False,
     texto_completo: Annotated[
         bool,
         typer.Option(
@@ -169,6 +177,8 @@ def audit(
             overrides["ia_online"]["modelo"] = ia_modelo
     if texto_completo:
         overrides["refs"] = {"texto_completo": True}
+    if sem_cache:
+        overrides["sem_cache"] = True
     if online is not None:
         overrides["online"] = online
     if email:
@@ -211,6 +221,7 @@ def audit(
             "periodico": per.get("periodico"),
             "pdf": str(pdf) if pdf else None,
             "texto_completo": texto_completo,
+            "sem_cache": sem_cache,
             "tipo": tipo,
             "ia_online": ia_online,
             "nivel": str(config.get("todo", "nivel", "a1")),
@@ -460,6 +471,56 @@ def modelo_instalar(
         shutil.rmtree(dest)
     shutil.copytree(origem, dest)
     typer.echo(f"modelo instalado em {dest}")
+
+
+cache_app = typer.Typer(help="Cache das consultas online (~/.cache/errei).")
+app.add_typer(cache_app, name="cache")
+
+
+def _mb(n: int) -> str:
+    return f"{n / 1024 / 1024:.1f} MB"
+
+
+@cache_app.command("info", help="Mostra o tamanho e o conteúdo do cache das consultas online.")
+def cache_info() -> None:
+    from datetime import datetime
+
+    from errei.config import cache_dir
+    from errei.net import cache as cache_mod
+
+    st = cache_mod.stats(cache_dir())
+
+    def quando(ts: float | None) -> str:
+        return datetime.fromtimestamp(ts).strftime("%Y-%m-%d %H:%M") if ts else "—"
+
+    typer.echo(f"pasta:      {st['pasta']}")
+    typer.echo(
+        f"respostas:  {st['respostas']} ({_mb(st['http_bytes'])}) · "
+        f'{st["nao_encontradas"]} "não encontrada" · {st["vencidas"]} vencida(s)'
+    )
+    typer.echo(f"período:    {quando(st['mais_antiga'])} → {quando(st['mais_recente'])}")
+    for host, n in list(st["por_fonte"].items())[:10]:
+        typer.echo(f"  {host:<40} {n}")
+    typer.echo(f"PDFs:       {st['pdfs']} ({_mb(st['pdf_bytes'])})")
+    typer.echo(
+        f'validade:   respostas {cache_mod.DEFAULT_TTL // 86400} dias · "não encontrada" '
+        f"{cache_mod.NEGATIVE_TTL // 86400} dias · PDFs {cache_mod.PDF_TTL // 86400} dias "
+        f"(até {cache_mod.PDF_MAX_BYTES // 1024 // 1024} MB)"
+    )
+
+
+@cache_app.command("limpar", help="Apaga o cache das consultas online (não mexe nos modelos).")
+def cache_limpar(
+    vencidos: Annotated[
+        bool, typer.Option("--vencidos", help="Apaga só as entradas vencidas.")
+    ] = False,
+) -> None:
+    from errei.config import cache_dir
+    from errei.net import cache as cache_mod
+
+    res = cache_mod.clear(cache_dir(), somente_vencidos=vencidos)
+    what = "vencidas " if vencidos else ""
+    typer.echo(f"apagadas {res['respostas']} resposta(s) {what}e {res['pdfs']} PDF(s) do cache")
 
 
 @app.callback(invoke_without_command=True)

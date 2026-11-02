@@ -40,7 +40,9 @@ def _safe_run(checker: Checker, project: Project, ctx: RunContext) -> list[Findi
 def make_http(config: Config) -> Any:
     from errei.net.client import HttpClient  # importa httpx só quando online
 
-    return HttpClient(cache_dir=cache_dir(), email=config.email)
+    return HttpClient(
+        cache_dir=cache_dir(), email=config.email, refresh=bool(config.data.get("sem_cache"))
+    )
 
 
 def run(

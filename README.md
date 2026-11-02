@@ -66,6 +66,9 @@ errei . --online --texto-completo    # baixa PDFs abertos das obras para conferi
 errei modelo info                    # estado e métricas do modelo de citações errei-cita
 errei init                           # cria .errei.toml comentado na pasta
 errei doctor                         # verifica dependências (java, LanguageTool, hunspell)
+errei cache info                     # tamanho e conteúdo do cache das consultas online
+errei cache limpar                   # apaga o cache (--vencidos: só o que venceu)
+errei . --online --sem-cache         # consulta as fontes de novo, ignorando o cache
 errei explain PTBR-CRASE-001         # explica uma regra; --list lista todas
 ```
 
@@ -216,6 +219,29 @@ paths = ["apendices/*.tex"]
 
 Termos técnicos vão em `.errei-dict.txt` (um por linha), que vale para ortografia e
 anglicismos.
+
+## Cache das consultas online
+
+Com `--online`, as respostas das bases (Crossref, OpenAlex, Semantic Scholar, arXiv, Open
+Library, Google Books, Gemini) ficam guardadas em `~/.cache/errei` (ou
+`$XDG_CACHE_HOME/errei`). Assim a segunda auditoria do mesmo artigo é rápida, não estoura
+os limites de requisição das APIs e dá o mesmo resultado para a mesma referência.
+
+| o que | arquivo | validade |
+|---|---|---|
+| respostas encontradas | `http.sqlite` | 30 dias |
+| "não encontrada" (404) | `http.sqlite` | 2 dias: um DOI recém-registrado ou uma recusa momentânea da base é consultado de novo logo |
+| PDFs de acesso aberto (`--texto-completo`) | `pdf/` | 90 dias, até 500 MB (os mais antigos saem primeiro) |
+
+O que venceu é apagado sozinho ao abrir o cache. Cabeçalhos com chaves de API nunca são
+gravados.
+
+```bash
+errei cache info               # pasta, nº de respostas, "não encontradas", vencidas, por fonte, PDFs
+errei cache limpar             # apaga o cache inteiro (não mexe nos modelos nem no LanguageTool)
+errei cache limpar --vencidos  # apaga só o que venceu
+errei . --online --sem-cache   # ignora o cache nesta execução e grava as respostas novas
+```
 
 ## Configuração
 

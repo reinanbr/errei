@@ -133,8 +133,12 @@ def run_doctor(*, download: bool = False, online: bool = False) -> int:
         True if hs else None,
         str(hs) if hs else "ausente (ex.: apt install hunspell-pt-br); usa pyspellchecker",
     )
+    from errei.net.cache import stats
+
     cd = cache_dir()
-    row("Cache", True, str(cd))
+    st = stats(cd)
+    mb = (st["http_bytes"] + st["pdf_bytes"]) / 1048576
+    row("Cache", True, f"{cd} · {st['respostas']} resposta(s), {mb:.1f} MB (errei cache info)")
     if online:
         try:
             import httpx

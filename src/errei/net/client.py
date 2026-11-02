@@ -20,7 +20,7 @@ import httpx
 
 from errei import __version__
 from errei.model import Finding, Severity
-from errei.net.cache import HttpCache
+from errei.net.cache import HttpCache, pdf_get, pdf_put
 
 # intervalo mínimo entre requisições por host (segundos)
 HOST_INTERVAL = {
@@ -69,6 +69,7 @@ class HttpClient:
         intervals: dict[str, float] | None = None,
         default_interval: float = DEFAULT_INTERVAL,
         backoff: float = 1.0,
+        refresh: bool = False,
     ) -> None:
         self.email = email.strip()
         ua = f"errei/{__version__} (verificador de artigos; python-httpx)"
@@ -82,6 +83,8 @@ class HttpClient:
         )
         self.cache = HttpCache(cache_dir / "http.sqlite" if cache_dir else None)
         self.cache_dir = cache_dir
+        # --sem-cache: não lê o cache (consulta as fontes de novo), mas grava o resultado
+        self.refresh = refresh
         self.limiter = RateLimiter(intervals, default_interval)
         self.retries = retries
         self.backoff = backoff
@@ -115,7 +118,7 @@ class HttpClient:
         host = urlsplit(url).hostname or ""
         key = self._key(url, params)
         self.hosts.add(host)
-        if use_cache:
+        if use_cache and not self.refresh:
             hit = self.cache.get(key)
             if hit is not None:
                 return hit
@@ -161,13 +164,11 @@ class HttpClient:
         if not url.startswith(("https://", "http://")) or self.disabled(host):
             return None
         self.hosts.add(host)
-        cache_file = None
-        if self.cache_dir is not None:
-            cache_file = (
-                self.cache_dir / "pdf" / (hashlib.sha256(url.encode()).hexdigest() + ".bin")
-            )
-            if cache_file.is_file():
-                return cache_file.read_bytes()
+        name = hashlib.sha256(url.encode()).hexdigest() + ".bin"
+        if self.cache_dir is not None and not self.refresh:
+            hit = pdf_get(self.cache_dir, name)
+            if hit is not None:
+                return hit
         self.limiter.wait(host)
         try:
             with self._lock:
@@ -188,12 +189,8 @@ class HttpClient:
                 self._last_err[host] = "download falhou"
             return None
         data = b"".join(chunks)
-        if cache_file is not None:
-            try:
-                cache_file.parent.mkdir(parents=True, exist_ok=True)
-                cache_file.write_bytes(data)
-            except OSError:
-                pass
+        if self.cache_dir is not None:
+            pdf_put(self.cache_dir, name, data)
         return data
 
     def get_json(
@@ -231,7 +228,7 @@ class HttpClient:
         body = json.dumps(payload, sort_keys=True, ensure_ascii=False)
         self.hosts.add(host)
         key = "POST " + url + "#" + hashlib.sha256(body.encode()).hexdigest()
-        if use_cache:
+        if use_cache and not self.refresh:
             hit = self.cache.get(key)
             if hit is not None:
                 try:

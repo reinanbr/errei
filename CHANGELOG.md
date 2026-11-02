@@ -3,6 +3,21 @@
 Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/); versões
 seguem [SemVer](https://semver.org/lang/pt-BR/).
 
+## [0.5.1] - 2026-11-02
+
+### Adicionado
+
+- `errei cache info` (pasta, respostas, "não encontradas", vencidas, por fonte, PDFs) e
+  `errei cache limpar [--vencidos]`. O `errei doctor` mostra o tamanho do cache.
+- `--sem-cache`: com `--online`, consulta as fontes de novo e grava as respostas novas.
+
+### Alterado
+
+- Respostas "não encontrada" (404) valem 2 dias no cache, não mais 30: um DOI recém-registrado
+  ou uma recusa momentânea da base não fica marcado como inexistente por um mês.
+- As entradas vencidas são apagadas ao abrir o cache (antes o arquivo só crescia).
+- PDFs de acesso aberto em cache valem 90 dias e a pasta é limitada a 500 MB.
+
 ## [0.5.0] - 2026-11-02
 
 ### Adicionado
