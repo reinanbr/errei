@@ -233,6 +233,40 @@ def write_pdf(report: Report, path: Path) -> None:
     rows.append([P("<b>total</b>"), *[P(f"<b>{counts[s]}</b>") for s in Severity]])
     story.append(table(rows, [W - 4 * 2.2 * cm, *[2.2 * cm] * 4], head))
     story.append(Spacer(1, 6))
+
+    from errei.report import qualidade
+
+    q = qualidade.get(report)
+    if q:
+        story.append(P("Nível de qualidade do trabalho", "h1"))
+        story.append(P(f"<b>Nível atingido: {t(q['nome'])}</b>", "p"))
+        qrows = [
+            [
+                P(("✔ " if n["atingido"] else "") + t(n["nome"])),
+                P(f"{n['cumpridas']}/{n['total']}"),
+                P(f"{n['pct']}%"),
+            ]
+            for n in q["niveis"]
+        ]
+        story.append(
+            table(qrows, [W - 5 * cm, 2.5 * cm, 2.5 * cm], ["nível", "metas", "progresso"])
+        )
+        if q.get("proximo"):
+            prox = next(n for n in q["niveis"] if n["nivel"] == q["proximo"])
+            story.append(Spacer(1, 4))
+            story.append(P(t(f"Para chegar a {prox['nome']}, falta:"), "p"))
+            for f in q["faltam_proximo"]:
+                story.append(P("• " + t(f), "p"))
+        story.append(
+            P(
+                t(
+                    "O nível é atingido quando todas as metas medidas dele e dos anteriores "
+                    "são cumpridas. É uma referência objetiva, não prevê aprovação nem aceite."
+                ),
+                "note",
+            )
+        )
+        story.append(Spacer(1, 6))
     story.append(
         P(
             "Nenhum achado é um veredito: similaridade, indícios de IA, validação de "

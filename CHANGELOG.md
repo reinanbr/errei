@@ -7,6 +7,10 @@ seguem [SemVer](https://semver.org/lang/pt-BR/).
 
 ### Adicionado
 
+- "Nível de qualidade do trabalho" na tela, no PDF, no Markdown, na lista de afazeres e em
+  `meta.qualidade` no JSON: nível atingido (TCC → Mestrado → Doutorado → Excelência),
+  metas cumpridas por nível e o que falta para o próximo. Usa as mesmas metas da lista de
+  afazeres; um nível só conta quando os anteriores também são cumpridos.
 - "Base do relatório": rodapé em cada página do PDF (versão, normas, fontes) e seção final
   no PDF, no Markdown, na lista de afazeres e em `meta.base` no JSON. Lista normas ABNT,
   fontes realmente consultadas, modelos, métodos, Qualis e hash do projeto.

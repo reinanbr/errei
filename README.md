@@ -3,7 +3,9 @@
 **errei** audita um artigo científico escrito em LaTeX (arquivos `.tex` e `.bib` de uma
 pasta) e aponta problemas de **estrutura LaTeX, citações e referências, normas ABNT,
 ortografia/gramática/estilo em pt-BR, qualidade textual, similaridade, indícios de texto
-gerado por IA e prontidão para periódicos**.
+gerado por IA e prontidão para periódicos**. Mostra o **nível de qualidade** que o trabalho
+já atinge (TCC, Mestrado, Doutorado ou Excelência) e gera uma **lista de afazeres** em
+Markdown com o que fazer para subir de nível.
 
 Princípios:
 
@@ -57,7 +59,8 @@ errei . --format json --out relatorio.json
 errei . --qualis-csv ~/qualis.csv --periodico "ISSN 1234-5678" --qualis-data 2025-07-01
 errei . --fail-on warning            # código 1 também com avisos (útil em CI)
 errei . --pdf relatorio.pdf          # mostra na tela E grava o relatório em PDF
-errei . --resumo                     # na tela, só os principais problemas e melhorias
+errei . --resumo                     # na tela, só o nível de qualidade, problemas e melhorias
+errei . --todo afazeres.md --nivel mestrado  # lista de tarefas para chegar ao nível
 errei . --format pdf --out rel.pdf   # PDF como saída principal (resumo na tela)
 errei . --online --texto-completo    # baixa PDFs abertos das obras para conferir citações diretas
 errei modelo info                    # estado e métricas do modelo de citações errei-cita
@@ -81,18 +84,37 @@ errei explain PTBR-CRASE-001         # explica uma regra; --list lista todas
 
 ### Saídas
 
-- **term** (padrão): via `rich`, com resumo no topo, contagem por verificador e achados
+- **term** (padrão): via `rich`, com resumo e nível de qualidade no topo, contagem por verificador e achados
   agrupados por arquivo e ordenados por severidade. Respeita `NO_COLOR` e saída não-TTY.
 - **md**: relatório completo com versão, data, hash do projeto, flags, métricas e Limitações.
-- **json**: o mesmo conteúdo, estruturado (`"schema": 1`), para integração.
+- **json**: o mesmo conteúdo, estruturado (`"schema": 1`), para integração; o nível de
+  qualidade fica em `meta.qualidade`.
 
-- **pdf**: relatório completo para ler, imprimir ou enviar. Traz capa com resumo, **principais
+- **pdf**: relatório completo para ler, imprimir ou enviar. Traz capa com resumo, **nível de
+  qualidade do trabalho**, **principais
   problemas (onde corrigir)**, **possíveis melhorias**, **referências verificadas** (obra
   encontrada, resumo e validação de cada frase que a cita), métricas, todos os achados por
   arquivo e limitações. Com `--pdf ARQ` a saída de tela continua normal.
 
-Na tela, o topo do relatório mostra sempre os **principais problemas** e as **possíveis
-melhorias** com `arquivo:linha` e a sugestão de correção. Com `--resumo` aparece só isso.
+Na tela, o topo do relatório mostra sempre o **nível de qualidade**, os **principais
+problemas** e as **possíveis melhorias** com `arquivo:linha` e a sugestão de correção. Com
+`--resumo` aparece só isso.
+
+```
+╭──────────────────────── Nível de qualidade ────────────────────────╮
+│ Nível atingido: TCC (graduação)                                    │
+│ ✔ TCC (graduação)            ████████████████████ 11/11 (100%)     │
+│ · Mestrado                   █████████████░░░░░░░ 10/15 (67%)      │
+│ · Doutorado                  ██████████░░░░░░░░░░ 8/16 (50%)       │
+│ · Excelência (Scopus ≥ 92…)  ███████░░░░░░░░░░░░░ 7/19 (37%)       │
+│ Para chegar a Mestrado, falta:                                     │
+│   • Referências citadas: 18 (meta ≥ 25)                            │
+│   • Limitações do estudo: ausente (meta presente) …                │
+╰────────────────────────────────────────────────────────────────────╯
+```
+
+O quadro usa as metas da [lista de afazeres](#lista-de-afazeres-por-nível); é uma
+referência objetiva e não prevê aprovação nem aceite.
 
 ## Validação de citações
 
@@ -223,6 +245,11 @@ errei . --todo afazeres.md --nivel mestrado    # só a lista
 
 A lista traz:
 
+- **Nível de qualidade do trabalho**: o nível que o trabalho já atinge (TCC, Mestrado,
+  Doutorado ou Excelência), o progresso em cada um (metas cumpridas/medidas) e o que falta
+  para o próximo. Um nível só é atingido quando todas as metas medidas dele e dos
+  anteriores são cumpridas. O mesmo quadro aparece na tela, no PDF, no Markdown e em
+  `meta.qualidade` no JSON.
 - **Metas do nível**: tabela ✅/❌ com referências, extensão do texto, erros e avisos,
   índice de prontidão, elementos obrigatórios, abstract e elementos de conteúdo (objetivo,
   pergunta de pesquisa, limitações, contribuição, trabalhos futuros). Nos níveis altos

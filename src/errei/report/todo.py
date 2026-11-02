@@ -637,7 +637,12 @@ def build(report: Report, nivel_key: str = "a1", previous: dict[str, str] | None
                 md.append(f"- [x] ~~{v}~~")
             md.append("")
 
-    md.append("## Metas do nível")
+    from errei.report import qualidade
+
+    q = qualidade.get(report) or qualidade.avaliar(report)
+    md += qualidade.markdown(q, alvo=nivel.key)
+
+    md.append(f"## Metas do nível {nivel.nome}")
     md.append("")
     md.append("| | meta | alvo | atual | como chegar lá |")
     md.append("|---|---|---|---|---|")

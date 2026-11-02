@@ -3,7 +3,7 @@
 # Uso:
 #   Instalar:     curl -fsSL https://raw.githubusercontent.com/reinanbr/errei/main/install.sh | sh
 #   Com o modelo: curl -fsSL https://raw.githubusercontent.com/reinanbr/errei/main/install.sh | sh -s -- --modelo
-#   Versão fixa:  ... | sh -s -- --versao v0.2.0
+#   Versão fixa:  ... | sh -s -- --versao v0.5.0
 #   Desinstalar:  curl -fsSL https://raw.githubusercontent.com/reinanbr/errei/main/install.sh | sh -s -- uninstall
 #
 # Instala num ambiente Python isolado (~/.local/share/errei/venv) e cria o comando
@@ -46,7 +46,7 @@ Instalar:
 Instalar também os modelos locais errei-cita e errei-resumo (torch CPU, ~1,5 GB):
   curl -fsSL https://raw.githubusercontent.com/${REPO}/main/install.sh | sh -s -- --modelo
 Versão específica:
-  ... | sh -s -- --versao v0.2.0
+  ... | sh -s -- --versao v0.5.0
 Desinstalar:
   curl -fsSL https://raw.githubusercontent.com/${REPO}/main/install.sh | sh -s -- uninstall
 EOF

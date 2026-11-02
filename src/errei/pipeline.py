@@ -187,7 +187,7 @@ def run(
     from errei.report.base import build_base
 
     meta["base"] = build_base(meta, names, hosts)
-    return Report(
+    report = Report(
         findings=kept,
         metrics=ctx.metrics,
         meta=meta,
@@ -198,3 +198,7 @@ def run(
         references=list(ctx.shared.get("referencias", [])),
         project=project,
     )
+    from errei.report.qualidade import avaliar
+
+    report.meta["qualidade"] = avaliar(report)
+    return report

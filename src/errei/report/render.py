@@ -130,6 +130,11 @@ def to_markdown(report: Report) -> str:
     for c, counts in report.by_checker().items():
         out.append(f"| {c} | " + " | ".join(str(counts[s]) for s in Severity) + " |")
     out.append("")
+    from errei.report import qualidade
+
+    q = qualidade.get(report)
+    if q:
+        out += qualidade.markdown(q)
 
     for g in report.metrics:
         out.append(f"## {g.title}\n")
@@ -300,6 +305,7 @@ def render_term(
         header.append(f" · {report.suppressed} suprimido(s)", style="dim")
     header.append(f"\nonline: {'sim' if m.get('online') else 'não'}")
     console.print(Panel(header, title="Resumo", expand=False))
+    _render_qualidade(report, console)
 
     table = Table(title="Por verificador", show_edge=False, pad_edge=False)
     table.add_column("verificador")
@@ -365,6 +371,35 @@ def render_term(
         console.print()
 
     _limitations(report, console)
+
+
+def _render_qualidade(report: Report, console: Console) -> None:
+    from errei.report import qualidade
+
+    q = qualidade.get(report)
+    if not q:
+        return
+    body = Text()
+    body.append(f"Nível atingido: {q['nome']}\n", style="bold")
+    for n in q["niveis"]:
+        style = "green" if n["atingido"] else "dim"
+        mark = "✔" if n["atingido"] else "·"
+        body.append(f"{mark} {n['nome']:<52} ", style=style)
+        body.append(f"{qualidade.barra(n['pct'])} ", style=style)
+        body.append(f"{n['cumpridas']}/{n['total']} ({n['pct']}%)\n", style=style)
+    if q.get("proximo"):
+        prox = next(n for n in q["niveis"] if n["nivel"] == q["proximo"])
+        faltam = q["faltam_proximo"]
+        body.append(f"Para chegar a {prox['nome']}, falta:\n", style="bold")
+        for f in faltam[:8]:
+            body.append(f"  • {f}\n")
+        if len(faltam) > 8:
+            body.append(f"  … e mais {len(faltam) - 8} (veja a lista de afazeres: --todo)\n")
+    body.append(
+        "referência por metas objetivas; não prevê aprovação nem aceite", style="italic dim"
+    )
+    console.print(Panel(body, title="Nível de qualidade", expand=False))
+    console.print()
 
 
 def _limitations(report: Report, console: Console) -> None:
