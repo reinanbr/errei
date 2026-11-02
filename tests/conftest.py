@@ -55,6 +55,14 @@ def isolated_home(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
     monkeypatch.setenv("XDG_CACHE_HOME", str(tmp_path / "cache"))
     monkeypatch.setenv("XDG_CONFIG_HOME", str(tmp_path / "config"))
     monkeypatch.setenv("NO_COLOR", "1")
+    for var in (
+        "ERREI_GEMINI_KEY",
+        "GEMINI_API_KEY",
+        "GEMINI_KEY",
+        "GOOGLE_API_KEY",
+        "GOOGLE_BOOKS_API_KEY",
+    ):
+        monkeypatch.delenv(var, raising=False)
     if not os.environ.get("ERREI_TEST_MODEL"):
         monkeypatch.setenv("ERREI_NO_MODEL", "1")
     if not os.environ.get("ERREI_TEST_LANGUAGETOOL"):

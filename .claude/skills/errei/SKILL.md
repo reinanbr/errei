@@ -1,6 +1,6 @@
 ---
 name: errei
-description: Audita um artigo científico em LaTeX (pt-BR) com a CLI errei e resume o relatório (estrutura, referências, ABNT, escrita, similaridade, indícios de IA, prontidão). Use quando o usuário pedir para revisar/auditar um artigo LaTeX ou rodar /errei.
+description: Audita um artigo ou monografia em LaTeX (pt-BR) com a CLI errei e resume o relatório (estrutura, completude, referências, obras nacionais, ABNT, escrita, similaridade, indícios de IA, prontidão). Use quando o usuário pedir para revisar/auditar um artigo LaTeX ou rodar /errei.
 ---
 
 # /errei — auditoria de artigo LaTeX
@@ -25,6 +25,10 @@ Camada fina sobre a CLI `errei`. Não reimplemente verificações: rode a CLI e 
    - Com `--online`, o JSON traz `references[]`: obra encontrada (título, autores, ano,
      resumo, link) e, em `uses[]`, cada frase do artigo que a cita com `verdict`
      (`sustenta` / `contradiz` / `neutro`) e o trecho da fonte (`evidence`).
+   - `--tipo artigo|monografia|tcc|dissertacao|tese` fixa o tipo usado pela completude
+     (padrão: detectar).
+   - **Não** adicione `--ia-online` por conta própria: envia frases do trabalho ao Google
+     Gemini e exige chave (`GEMINI_API_KEY`). Só use se o usuário pedir.
    - Código de saída 1 = há erros (normal); 2 = problema de uso/ambiente (mostre a mensagem
      de stderr e sugira `errei doctor`).
 3. Leia o JSON (`schema` 1): `summary.by_severity`, `summary.by_checker`, `findings[]`
@@ -40,10 +44,16 @@ Camada fina sobre a CLI `errei`. Não reimplemente verificações: rode a CLI e 
    - similaridade e IA sempre como **indícios**, com a confiança e os motivos do JSON;
    - citações: liste primeiro as `contradiz` (frase do artigo × trecho da fonte); `neutro`
      significa "o resumo não permite confirmar", não "citação errada";
+   - **completude**: o que falta (`COMP-OBRIG-001`, `COMP-REC-001`, `COMP-META-001`), com a
+     métrica "Obrigatórios presentes" e o que cada elemento deve conter;
+   - **obras nacionais** (`NAC-SUG-001`): para cada citação estrangeira, as obras
+     brasileiras localizadas (evidence), lembrando que devem ser lidas antes de citar;
+   - orientações de IA (`COMP-IA-001`) são orientações: não as transforme em texto pronto
+     para o trabalho;
    - feche com 1–2 linhas da seção Limitações.
 5. Nunca use linguagem de veredito ("é plágio", "foi escrito por IA", "referência falsa").
    Use "trecho semelhante", "indício", "não verificada".
-6. Não edite os arquivos do artigo. Se o usuário pedir correções, proponha-as como diffs e
-   só aplique com confirmação.
+6. Não edite os arquivos do artigo nem redija seções faltantes por ele. Se o usuário pedir
+   correções, proponha-as como diffs e só aplique com confirmação.
 
 Para detalhar uma regra: `errei explain <CODIGO>`.

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import importlib.util
+import os
 import shutil
 import subprocess
 import sys
@@ -112,6 +113,20 @@ def run_doctor(*, download: bool = False, online: bool = False) -> int:
         row("Relatório PDF (reportlab)", True, "ok")
     except ModuleNotFoundError:
         row("Relatório PDF (reportlab)", None, "pip install 'errei[pdf]'")
+    from errei.net import gemini
+
+    row(
+        "IA online (Gemini, --ia-online)",
+        True if gemini.api_key() else None,
+        "chave encontrada" if gemini.api_key() else f"opcional: defina {gemini.KEY_ENVS[1]}",
+    )
+    row(
+        "Google Books (livros nacionais)",
+        True if os.environ.get("GOOGLE_BOOKS_API_KEY") else None,
+        "chave encontrada"
+        if os.environ.get("GOOGLE_BOOKS_API_KEY")
+        else "opcional: GOOGLE_BOOKS_API_KEY (sem ela, usa a Open Library)",
+    )
     hs = hunspell_ptbr()
     row(
         "hunspell pt_BR",

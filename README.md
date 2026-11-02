@@ -172,6 +172,68 @@ flags da linha de comando. Rode `errei init` para gerar um arquivo comentado.
 > usuário ou da linha de comando, **nunca** do `.errei.toml` da pasta do artigo, que pode vir
 > de terceiros. O conteúdo do artigo nunca é executado nem passado a `latex` ou ao shell.
 
+## Completude do trabalho
+
+O verificador `completude` diz **o que falta** para o trabalho estar completo, segundo a
+norma do tipo de trabalho:
+
+- **artigo**: NBR 6022:2018 (título, autoria, resumo e palavras-chave, introdução,
+  desenvolvimento, considerações finais, referências; metodologia e resultados como
+  recomendados);
+- **monografia, TCC, dissertação, tese**: NBR 14724:2011 (capa, folha de rosto, ficha
+  catalográfica, folha de aprovação, resumo, abstract, listas, sumário, introdução,
+  desenvolvimento, conclusão, referências...) e os dados de capa/folha de rosto do abnTeX2
+  (`\titulo`, `\autor`, `\orientador`, `\instituicao`, `\local`, `\data`, `\preambulo`).
+
+O tipo é detectado pela classe e pelos comandos usados. Para fixá-lo, use
+`--tipo artigo|monografia|tcc|dissertacao|tese`. O relatório traz o checklist completo
+(presente/ausente, obrigatório/recomendado/opcional, item da norma) e, para cada elemento
+ausente, o que ele deve conter.
+
+## Obras nacionais no lugar de estrangeiras
+
+Com `--online`, o verificador `nacionais` procura, para cada afirmação que cita uma obra
+estrangeira, **artigos e livros brasileiros** sobre o mesmo tema:
+
+- **artigos**: OpenAlex, filtrado para autoria com vínculo no Brasil;
+- **livros**: Open Library, em português, e Google Books, só se houver
+  `GOOGLE_BOOKS_API_KEY`, porque a cota anônima vive esgotada.
+
+Cada sugestão traz autores, ano, título, veículo, DOI/ISBN/link e a base em que foi
+localizada. A ordenação usa o modelo errei-cita sobre o resumo, combinado com os termos em
+comum. Uma obra é tratada como nacional quando o `.bib` indica `language = {portuguese}`
+ou instituição/editora/cidade brasileira, mesmo que o título esteja em inglês. Nada é
+inserido no `.bib`: leia a obra antes de citá-la.
+
+### IA online (Gemini), opcional
+
+```bash
+export GEMINI_API_KEY=...        # ou ERREI_GEMINI_KEY / GEMINI_KEY / GOOGLE_API_KEY
+errei . --online --ia-online     # modelo padrão: gemini-flash-lite-latest (--ia-modelo)
+```
+
+Com `--ia-online`, o Google Gemini:
+
+- sugere **consultas** em português e **obras brasileiras** para cada afirmação;
+- dá **orientações** do que escrever nos elementos ausentes.
+
+Regras garantidas no código:
+
+- **Nada é aceito sem verificação.** Uma referência sugerida pela IA só aparece se for
+  localizada em OpenAlex, Open Library, Google Books ou Crossref, com título e autor
+  conferidos. As demais são descartadas e contadas (`NAC-IA-001`).
+- **A IA não escreve o trabalho.** As respostas seguem um esquema JSON fixo (palavras-chave,
+  referências, orientações), e cada item é cortado em 25 palavras. Não há parágrafos prontos,
+  e nada é gravado nos arquivos. O relatório traz a orientação e você redige com suas
+  palavras.
+- **O envio é explícito.** Liga só com `--online --ia-online` ou com `[ia_online] enabled =
+  true` em `~/.config/errei/config.toml`. O `.errei.toml` do artigo **não** consegue ligar
+  isso. São enviados só as frases que citam obras estrangeiras, os títulos dessas obras, o
+  título do trabalho e os títulos das seções. O relatório registra o que foi enviado
+  (`meta.ia_online`).
+- **A chave fica em sigilo.** Ela vai no cabeçalho `x-goog-api-key` e nunca é gravada em
+  cache, relatório ou log.
+
 ## Verificadores
 
 Cada verificador é um plugin descoberto pelo grupo de entry points `errei.checkers`
@@ -187,6 +249,8 @@ Cada verificador é um plugin descoberto pelo grupo de entry points `errei.check
 | `plagio` | similaridade em camadas: (1) repetição interna, (2) corpus local opcional, (3) busca online de frases distintivas em metadados/resumos públicos |
 | `ia` | indícios heurísticos e transparentes por parágrafo (burstiness, repetição, diversidade, conectivos, clichês de LLM, uniformidade, marcas autorais), com escore e motivos. Há um adapter opcional para detector externo |
 | `periodico` | estrato Qualis **do periódico-alvo** (CSV), métricas abertas do OpenAlex e índice de prontidão 0–100 por componentes |
+| `completude` | o que falta para o trabalho estar completo: checklist de elementos pré-textuais, textuais e pós-textuais da NBR 6022 (artigo) ou NBR 14724 (monografia, TCC, dissertação, tese), dados da capa/folha de rosto (abnTeX2) e o que escrever em cada elemento ausente |
+| `nacionais` | com `--online`, sugere **artigos e livros brasileiros** para afirmações que citam obras estrangeiras (OpenAlex com autoria no Brasil, Open Library e Google Books em português), ordenados pelo modelo errei-cita |
 
 ## Tabela Qualis (CSV)
 
@@ -308,6 +372,11 @@ possíveis falsos positivos e negativos.
 | `ABNT-RESUMO-004` | sugestão | Citação ou fórmula no resumo | determinística |
 | `ABNT-STYLE-001` | info | Estilo de citação detectado | determinística |
 | `ABNT-STYLE-002` | aviso | Estilo bibliográfico não ABNT | determinística |
+| `COMP-IA-001` | info | Orientações para completar (IA online) | heurística |
+| `COMP-META-001` | aviso | Dado de identificação ausente | determinística |
+| `COMP-OBRIG-001` | aviso | Elemento obrigatório ausente | determinística |
+| `COMP-REC-001` | sugestão | Elemento recomendado ausente | heurística |
+| `COMP-TIPO-001` | info | Tipo de trabalho | determinística |
 | `CORE-CHECKER-001` | aviso | Verificador falhou | determinística |
 | `CORE-DEP-001` | info | Dependência opcional ausente | determinística |
 | `CORE-NET-001` | info | Fonte online indisponível | determinística |
@@ -340,6 +409,8 @@ possíveis falsos positivos e negativos.
 | `LATEX-PARSE-001` | info | Extração de texto aproximada | determinística |
 | `LATEX-REF-001` | erro | Referência cruzada para rótulo inexistente | determinística |
 | `LATEX-TODO-001` | aviso | Pendência esquecida | determinística |
+| `NAC-IA-001` | info | Sugestões da IA descartadas | determinística |
+| `NAC-SUG-001` | sugestão | Obra brasileira para a mesma afirmação | heurística |
 | `PERIOD-OA-001` | info | Métricas abertas do periódico (OpenAlex) | determinística |
 | `PERIOD-QUALIS-001` | info | Estrato Qualis do periódico-alvo | determinística |
 | `PERIOD-QUALIS-002` | aviso | Periódico não encontrado no CSV Qualis | determinística |
@@ -369,6 +440,10 @@ possíveis falsos positivos e negativos.
 | `PTBR-SPELL-001` | sugestão | Possível erro de ortografia | heurística |
 | `PTBR-VICIO-001` | sugestão | Vício de linguagem acadêmica | determinística |
 | `REFS-ARXIV-001` | aviso | Identificador arXiv inválido | determinística |
+| `REFS-ATRIB-001` | info | Afirmação compatível com o resumo da fonte | heurística |
+| `REFS-ATRIB-002` | aviso | Resumo da fonte parece contradizer a afirmação | heurística |
+| `REFS-ATRIB-003` | sugestão | Atribuição não confirmada pelo resumo | heurística |
+| `REFS-ATRIB-004` | info | Atribuição não verificável | determinística |
 | `REFS-BIB-001` | sugestão | Entrada nunca citada | determinística |
 | `REFS-BIB-002` | erro | Chave duplicada no .bib | determinística |
 | `REFS-BIB-003` | aviso | Campo repetido na entrada | determinística |
@@ -384,6 +459,8 @@ possíveis falsos positivos e negativos.
 | `REFS-FIELD-001` | aviso | Campos obrigatórios ausentes | determinística |
 | `REFS-ISBN-001` | aviso | ISBN inválido | determinística |
 | `REFS-NOBIB-001` | erro | Citações sem bibliografia | determinística |
+| `REFS-QUOTE-001` | info | Citação direta localizada no texto aberto | heurística |
+| `REFS-QUOTE-002` | aviso | Citação direta não localizada ou com página diferente | heurística |
 | `REFS-RETRACT-001` | erro | Obra retratada | determinística |
 | `REFS-YEAR-001` | aviso | Ano inválido | determinística |
 

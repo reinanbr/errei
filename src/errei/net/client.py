@@ -28,6 +28,9 @@ HOST_INTERVAL = {
     "api.openalex.org": 0.2,
     "api.semanticscholar.org": 1.1,
     "export.arxiv.org": 3.0,
+    "generativelanguage.googleapis.com": 1.0,
+    "www.googleapis.com": 1.5,
+    "openlibrary.org": 1.0,
 }
 DEFAULT_INTERVAL = 0.5
 MAX_BODY = 5 * 1024 * 1024
@@ -100,7 +103,12 @@ class HttpClient:
         return host in self._disabled
 
     def get_text(
-        self, url: str, params: dict[str, Any] | None = None, *, use_cache: bool = True
+        self,
+        url: str,
+        params: dict[str, Any] | None = None,
+        *,
+        use_cache: bool = True,
+        headers: dict[str, str] | None = None,
     ) -> tuple[int, str] | None:
         """GET com cache. Retorna (status, corpo) ou ``None`` se a fonte falhou."""
         host = urlsplit(url).hostname or ""
@@ -120,7 +128,7 @@ class HttpClient:
             try:
                 with self._lock:
                     self.requests_made += 1
-                resp = self._client.get(url, params=params or None)
+                resp = self._client.get(url, params=params or None, headers=headers)
             except httpx.HTTPError as exc:
                 last_err = f"{type(exc).__name__}: {exc}"
                 self._sleep(attempt, None)
@@ -185,8 +193,15 @@ class HttpClient:
                 pass
         return data
 
-    def get_json(self, url: str, params: dict[str, Any] | None = None) -> tuple[int, Any] | None:
-        res = self.get_text(url, params)
+    def get_json(
+        self,
+        url: str,
+        params: dict[str, Any] | None = None,
+        *,
+        headers: dict[str, str] | None = None,
+    ) -> tuple[int, Any] | None:
+        """``headers`` não entram na chave do cache (use-os para chaves de API)."""
+        res = self.get_text(url, params, headers=headers)
         if res is None:
             return None
         status, body = res
@@ -196,6 +211,67 @@ class HttpClient:
             return status, json.loads(body)
         except json.JSONDecodeError:
             return status, None
+
+    def post_json(
+        self,
+        url: str,
+        payload: dict[str, Any],
+        *,
+        headers: dict[str, str] | None = None,
+        use_cache: bool = True,
+    ) -> tuple[int, Any] | None:
+        """POST JSON com cache (chave = URL + hash do corpo; cabeçalhos ficam de fora,
+        para que segredos como chaves de API nunca sejam gravados no cache)."""
+        import hashlib
+
+        host = urlsplit(url).hostname or ""
+        body = json.dumps(payload, sort_keys=True, ensure_ascii=False)
+        key = "POST " + url + "#" + hashlib.sha256(body.encode()).hexdigest()
+        if use_cache:
+            hit = self.cache.get(key)
+            if hit is not None:
+                try:
+                    return hit[0], json.loads(hit[1])
+                except json.JSONDecodeError:
+                    pass
+        if self.disabled(host):
+            return None
+        last_err = ""
+        for attempt in range(self.retries + 1):
+            self.limiter.wait(host)
+            try:
+                with self._lock:
+                    self.requests_made += 1
+                resp = self._client.post(
+                    url,
+                    content=body.encode(),
+                    headers={"Content-Type": "application/json", **(headers or {})},
+                )
+            except httpx.HTTPError as exc:
+                last_err = type(exc).__name__  # sem a mensagem: pode conter a URL/cabeçalhos
+                self._sleep(attempt, None)
+                continue
+            if resp.status_code == 429 or resp.status_code >= 500:
+                last_err = f"HTTP {resp.status_code}"
+                self._sleep(attempt, resp.headers.get("Retry-After"))
+                continue
+            text = resp.text[:MAX_BODY]
+            with self._lock:
+                self._fail[host] = 0
+            try:
+                data = json.loads(text)
+            except json.JSONDecodeError:
+                data = None
+            if resp.status_code == 200 and data is not None:
+                self.cache.put(key, 200, text)
+            return resp.status_code, data
+        with self._lock:
+            self._fail[host] += 1
+            self._total_fail[host] += 1
+            self._last_err[host] = last_err
+            if self._fail[host] >= FAILURES_TO_DISABLE:
+                self._disabled.setdefault(host, last_err)
+        return None
 
     def _sleep(self, attempt: int, retry_after: str | None) -> None:
         if attempt >= self.retries:

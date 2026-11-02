@@ -18,7 +18,7 @@ from errei.model import Finding, Severity
 from errei.project import Project, load_project
 from errei.registry import discover, select
 from errei.report.build import Report
-from errei.report.limitations import limitations_for
+from errei.report.limitations import IA_ONLINE, limitations_for
 
 
 def _safe_run(checker: Checker, project: Project, ctx: RunContext) -> list[Finding]:
@@ -83,6 +83,23 @@ def run(
         cache_dir=cache_dir(),
         on_progress=progress,
     )
+    if ctx.http is not None and config.trusted_get("ia_online", "enabled", False):
+        from errei.net import gemini
+
+        gem = gemini.make(config, ctx.http)
+        if gem is None:
+            pre.append(
+                Finding(
+                    "CORE-DEP-001",
+                    Severity.AVISO,
+                    "--ia-online pedido, mas nenhuma chave do Gemini foi encontrada "
+                    f"({', '.join(gemini.KEY_ENVS)} ou [ia_online].api_key no config do "
+                    "usuário); seguindo sem IA",
+                    "core",
+                )
+            )
+        else:
+            ctx.shared["gemini"] = gem
     qualis_csv = str(config.get("periodico", "qualis_csv", "") or "")
     if qualis_csv and any(c.name == "periodico" for c in checkers):
         from errei.qualis import load_qualis
@@ -155,11 +172,21 @@ def run(
         "config_files": [str(p) for p in config.sources],
     }
     meta.update(ctx.extra_meta)
+    gem = ctx.shared.get("gemini")
+    if gem is not None:
+        meta["ia_online"] = {
+            "servico": "Google Gemini",
+            "modelo": gem.model,
+            "chamadas": gem.calls,
+            "falhas": gem.failures,
+            "enviado": sorted(set(gem.sent)),
+            "uso": "apenas sugestões no relatório; nenhum texto é escrito no artigo",
+        }
     return Report(
         findings=kept,
         metrics=ctx.metrics,
         meta=meta,
-        limitations=limitations_for(names),
+        limitations=limitations_for(names) + ([IA_ONLINE] if gem is not None else []),
         checkers=[(c.name, c.title) for c in checkers],
         notes=project.notes,
         suppressed=suppressed,

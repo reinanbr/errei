@@ -37,7 +37,22 @@ BY_CHECKER = {
     "exibido vem exclusivamente do CSV fornecido (e de sua data), e a CAPES vem "
     "reformulando o Qualis. O índice de prontidão resume sinais objetivos do manuscrito "
     "e NÃO prevê aceitação nem estrato.",
+    "completude": "A completude é verificada pelo fonte (comandos, ambientes e títulos de "
+    "seção). Elementos gerados por macros próprias, pelo template do periódico ou inseridos "
+    "pela editora podem aparecer como ausentes; o tipo de trabalho é detectado por "
+    "heurística (use --tipo para fixar).",
+    "nacionais": "As obras nacionais sugeridas existem nas bases consultadas (OpenAlex, "
+    "Open Library, Google Books), mas a afinidade com a afirmação é estimada pelo resumo ou pela "
+    "descrição, não pelo texto completo. Leia antes de citar. A obra estrangeira pode "
+    "continuar sendo a fonte mais adequada.",
 }
+
+IA_ONLINE = (
+    "Com --ia-online, trechos do trabalho (frases que citam obras estrangeiras, título e "
+    "títulos de seção) foram enviados ao Google Gemini. As respostas da IA aparecem só como "
+    "orientações curtas e referências já conferidas em bases abertas; nenhuma é texto para "
+    "copiar, e o errei não escreve no trabalho. Redija com suas próprias palavras."
+)
 
 
 def limitations_for(checkers: list[str]) -> list[str]:

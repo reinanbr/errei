@@ -45,6 +45,10 @@ DEFAULTS: dict[str, Any] = {
     },
     "ia": {"min_words": 60, "threshold": 0.6, "detector": ""},
     "periodico": {"qualis_csv": "", "qualis_data": "", "periodico": "", "area": ""},
+    "completude": {"tipo": "auto"},
+    "nacionais": {"enabled": True, "max_refs": 8, "max_sugestoes": 3},
+    # IA online (Gemini): só vale no config do USUÁRIO ou em flags, nunca no .errei.toml
+    "ia_online": {"enabled": False, "modelo": "", "api_key": ""},
 }
 
 TEMPLATE = """\
@@ -89,6 +93,16 @@ qualis_csv = ""    # CSV exportado da Plataforma Sucupira
 qualis_data = ""   # data de referência do CSV, ex.: "2025-07-01"
 periodico = ""     # "ISSN 1234-5678" ou título
 area = ""          # área de avaliação, ex.: "CIÊNCIA DA COMPUTAÇÃO"
+
+[completude]
+tipo = "auto"      # artigo | monografia | tcc | dissertacao | tese
+
+[nacionais]        # com --online: obras brasileiras para citações estrangeiras
+enabled = true
+max_refs = 8
+
+# [ia_online] (Gemini) é ignorado aqui por segurança: configure em
+# ~/.config/errei/config.toml ou use --ia-online com GEMINI_API_KEY no ambiente.
 """
 
 

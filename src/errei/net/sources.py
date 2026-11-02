@@ -329,3 +329,120 @@ def arxiv_search(http: Any, phrase: str, rows: int = 3) -> list[Candidate] | Non
     if res is None or res[0] != 200:
         return None
     return _arxiv_parse(res[1])
+
+
+# ------------------------------------------------------------------ obras nacionais
+GBOOKS = "https://www.googleapis.com/books/v1/volumes"
+
+
+def openalex_br_search(http: Any, query: str, rows: int = 5) -> list[Candidate] | None:
+    """Artigos/livros com autoria vinculada a instituição brasileira (OpenAlex)."""
+    res = http.get_json(
+        f"{OPENALEX}/works",
+        {
+            "search": query[:300],
+            "filter": "authorships.countries:BR,type:article|book|book-chapter",
+            "per-page": rows,
+        },
+    )
+    if res is None or res[1] is None:
+        return None
+    out = []
+    for it in res[1].get("results") or []:
+        c = _openalex_item(it)
+        c.extra["tipo"] = "livro" if str(it.get("type", "")).startswith("book") else "artigo"
+        c.extra["lingua"] = str(it.get("language") or "")
+        out.append(c)
+    return out
+
+
+def google_books_search(http: Any, query: str, rows: int = 3) -> list[Candidate] | None:
+    """Livros em português (Google Books). Só com ``GOOGLE_BOOKS_API_KEY`` no ambiente."""
+    import os
+
+    key = os.environ.get("GOOGLE_BOOKS_API_KEY", "").strip()
+    if not key:  # a cota anônima é compartilhada e vive esgotada
+        return None
+    res = http.get_json(
+        GBOOKS,
+        {"q": query[:300], "langRestrict": "pt", "printType": "books", "maxResults": rows},
+        headers={"x-goog-api-key": key},
+    )
+    if res is None or res[1] is None:
+        return None
+    out = []
+    for it in res[1].get("items") or []:
+        v = it.get("volumeInfo") or {}
+        authors_full = [str(a) for a in v.get("authors") or [] if a]
+        date = str(v.get("publishedDate") or "")
+        isbn = next(
+            (
+                str(i.get("identifier"))
+                for i in v.get("industryIdentifiers") or []
+                if str(i.get("type", "")).startswith("ISBN")
+            ),
+            "",
+        )
+        out.append(
+            Candidate(
+                "Google Books",
+                " ".join(
+                    x for x in (str(v.get("title") or ""), str(v.get("subtitle") or "")) if x
+                ).strip(),
+                [a.split()[-1] for a in authors_full],
+                int(date[:4]) if date[:4].isdigit() else None,
+                str(v.get("publisher") or ""),
+                "",
+                str(v.get("canonicalVolumeLink") or v.get("infoLink") or ""),
+                None,
+                " ".join(re.sub(r"<[^>]+>", " ", str(v.get("description") or "")).split()),
+                {
+                    "authors_full": authors_full,
+                    "tipo": "livro",
+                    "isbn": isbn,
+                    "lingua": str(v.get("language") or ""),
+                },
+            )
+        )
+    return out
+
+
+OPENLIBRARY = "https://openlibrary.org/search.json"
+
+
+def openlibrary_search(http: Any, query: str, rows: int = 3) -> list[Candidate] | None:
+    """Livros em português (Open Library, sem chave)."""
+    res = http.get_json(
+        OPENLIBRARY,
+        {
+            "q": query[:200],
+            "language": "por",
+            "limit": rows,
+            "fields": "title,subtitle,author_name,first_publish_year,publisher,isbn,key",
+        },
+    )
+    if res is None or res[1] is None:
+        return None
+    out = []
+    for it in res[1].get("docs") or []:
+        authors_full = [str(a) for a in it.get("author_name") or [] if a]
+        isbns = [str(i) for i in it.get("isbn") or []]
+        isbn = next((i for i in isbns if len(i) == 13), isbns[0] if isbns else "")
+        key = str(it.get("key") or "")
+        out.append(
+            Candidate(
+                "Open Library",
+                ": ".join(
+                    x for x in (str(it.get("title") or ""), str(it.get("subtitle") or "")) if x
+                ),
+                [a.split()[-1] for a in authors_full],
+                it.get("first_publish_year"),
+                _first(it.get("publisher")),
+                "",
+                f"https://openlibrary.org{key}" if key.startswith("/") else "",
+                None,
+                "",
+                {"authors_full": authors_full, "tipo": "livro", "isbn": isbn, "lingua": "pt"},
+            )
+        )
+    return out

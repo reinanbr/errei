@@ -113,8 +113,35 @@ def audit(
             "citações diretas.",
         ),
     ] = False,
+    tipo: Annotated[
+        str | None,
+        typer.Option(
+            "--tipo",
+            help="Tipo do trabalho para a completude: artigo, monografia, tcc, dissertacao, "
+            "tese (padrão: detectar).",
+        ),
+    ] = None,
+    ia_online: Annotated[
+        bool,
+        typer.Option(
+            "--ia-online",
+            help="Com --online, usa o Google Gemini para sugerir consultas, obras nacionais "
+            "(sempre conferidas em bases abertas) e orientações. ENVIA trechos do trabalho ao "
+            "Google. Chave em GEMINI_API_KEY. A IA nunca escreve no trabalho.",
+        ),
+    ] = False,
+    ia_modelo: Annotated[
+        str | None,
+        typer.Option("--ia-modelo", help="Modelo Gemini (padrão: gemini-flash-lite-latest)."),
+    ] = None,
 ) -> None:
     overrides: dict[str, Any] = {}
+    if tipo:
+        overrides["completude"] = {"tipo": tipo}
+    if ia_online:
+        overrides["ia_online"] = {"enabled": True}
+        if ia_modelo:
+            overrides["ia_online"]["modelo"] = ia_modelo
     if texto_completo:
         overrides["refs"] = {"texto_completo": True}
     if online is not None:
@@ -159,7 +186,11 @@ def audit(
             "periodico": per.get("periodico"),
             "pdf": str(pdf) if pdf else None,
             "texto_completo": texto_completo,
+            "tipo": tipo,
+            "ia_online": ia_online,
         }
+        if ia_online and not config.online:
+            raise ConfigError("--ia-online requer --online (a IA roda em servidor externo)")
         report = _run_with_progress(pipeline, path, config, flags, quiet=quiet)
     except (ProjectError, ConfigError, ValueError) as exc:
         _err(str(exc))

@@ -3,6 +3,33 @@
 Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/); versões
 seguem [SemVer](https://semver.org/lang/pt-BR/).
 
+## [0.3.0] - 2026-11-02
+
+### Adicionado
+
+- Verificador `completude`: checklist do que falta para o trabalho estar completo, segundo a
+  NBR 6022:2018 (artigo) ou a NBR 14724:2011 (monografia, TCC, dissertação, tese). Inclui
+  elementos pré-textuais, textuais e pós-textuais, dados de capa/folha de rosto do abnTeX2
+  (`COMP-META-001`) e orientação fixa do que escrever em cada elemento ausente. O tipo é
+  detectado automaticamente ou informado com `--tipo`.
+- Verificador `nacionais` (com `--online`): para afirmações que citam obras estrangeiras,
+  sugere artigos brasileiros (OpenAlex, autoria com vínculo no Brasil) e livros em
+  português (Open Library; Google Books com `GOOGLE_BOOKS_API_KEY`), ordenados pelo modelo
+  errei-cita combinado com os termos em comum (`NAC-SUG-001`). Obras com instituição,
+  editora ou cidade brasileira contam como nacionais mesmo com título em inglês.
+- IA online opcional (`--ia-online`, Google Gemini, padrão `gemini-flash-lite-latest`,
+  `--ia-modelo`): sugere consultas, obras nacionais e orientações para os elementos ausentes
+  (`COMP-IA-001`).
+  - Toda referência sugerida pela IA é conferida em bases abertas; as não localizadas são
+    descartadas (`NAC-IA-001`).
+  - As respostas têm esquema JSON fixo e itens de até 25 palavras: a IA não redige texto
+    para o trabalho.
+  - A IA só liga por flag ou pelo config do usuário, nunca pelo `.errei.toml` do artigo.
+  - O relatório registra o que foi enviado, e a chave nunca é gravada.
+- `HttpClient.post_json` e cabeçalhos em `get_json`, com cache que não inclui cabeçalhos
+  (chaves de API).
+- `errei doctor` mostra se há chave do Gemini e do Google Books.
+
 ## [0.2.0] - 2026-11-01
 
 ### Adicionado
