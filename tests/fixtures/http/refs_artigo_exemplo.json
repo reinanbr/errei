@@ -1,0 +1,1276 @@
+[
+ {
+  "key": "https://api.crossref.org/works/10.1038/nature14539",
+  "status": 200,
+  "body": {
+   "status": "ok",
+   "message-type": "work",
+   "message-version": "1.0.0",
+   "message": {
+    "indexed": {
+     "date-parts": [
+      [
+       2026,
+       11,
+       2
+      ]
+     ],
+     "date-time": "2026-11-02T00:26:52Z",
+     "timestamp": 1793579212214,
+     "version": "4.5.0"
+    },
+    "reference-count": 103,
+    "publisher": "Springer Science and Business Media LLC",
+    "issue": "7553",
+    "license": [
+     {
+      "start": {
+       "date-parts": [
+        [
+         2015,
+         5,
+         27
+        ]
+       ],
+       "date-time": "2015-05-27T00:00:00Z",
+       "timestamp": 1432684800000
+      },
+      "content-version": "tdm",
+      "delay-in-days": 0,
+      "URL": "https://www.springer.com/tdm"
+     },
+     {
+      "start": {
+       "date-parts": [
+        [
+         2015,
+         5,
+         27
+        ]
+       ],
+       "date-time": "2015-05-27T00:00:00Z",
+       "timestamp": 1432684800000
+      },
+      "content-version": "vor",
+      "delay-in-days": 0,
+      "URL": "https://www.springer.com/tdm"
+     }
+    ],
+    "content-domain": {
+     "domain": [
+      "link.springer.com"
+     ],
+     "crossmark-restriction": false
+    },
+    "short-container-title": [
+     "Nature"
+    ],
+    "published-print": {
+     "date-parts": [
+      [
+       2015,
+       5,
+       28
+      ]
+     ]
+    },
+    "DOI": "10.1038/nature14539",
+    "type": "journal-article",
+    "created": {
+     "date-parts": [
+      [
+       2015,
+       5,
+       26
+      ]
+     ],
+     "date-time": "2015-05-26T12:10:15Z",
+     "timestamp": 1432642215000
+    },
+    "page": "436-444",
+    "update-policy": "https://doi.org/10.1007/springer_crossmark_policy",
+    "source": "Crossref",
+    "is-referenced-by-count": 78992,
+    "title": [
+     "Deep learning"
+    ],
+    "prefix": "10.1038",
+    "volume": "521",
+    "author": [
+     {
+      "given": "Yann",
+      "family": "LeCun",
+      "sequence": "first",
+      "affiliation": [],
+      "role": [
+       {
+        "vocabulary": "crossref",
+        "role": "author"
+       }
+      ]
+     },
+     {
+      "given": "Yoshua",
+      "family": "Bengio",
+      "sequence": "additional",
+      "affiliation": [],
+      "role": [
+       {
+        "vocabulary": "crossref",
+        "role": "author"
+       }
+      ]
+     },
+     {
+      "given": "Geoffrey",
+      "family": "Hinton",
+      "sequence": "additional",
+      "affiliation": [],
+      "role": [
+       {
+        "vocabulary": "crossref",
+        "role": "author"
+       }
+      ]
+     }
+    ],
+    "member": "297",
+    "published-online": {
+     "date-parts": [
+      [
+       2015,
+       5,
+       27
+      ]
+     ]
+    },
+    "container-title": [
+     "Nature"
+    ],
+    "original-title": [],
+    "language": "en",
+    "link": [
+     {
+      "URL": "http://www.nature.com/articles/nature14539.pdf",
+      "content-type": "application/pdf",
+      "content-version": "vor",
+      "intended-application": "text-mining"
+     },
+     {
+      "URL": "http://www.nature.com/articles/nature14539",
+      "content-type": "text/html",
+      "content-version": "vor",
+      "intended-application": "text-mining"
+     },
+     {
+      "URL": "http://www.nature.com/articles/nature14539.pdf",
+      "content-type": "application/pdf",
+      "content-version": "vor",
+      "intended-application": "similarity-checking"
+     }
+    ],
+    "deposited": {
+     "date-parts": [
+      [
+       2023,
+       8,
+       10
+      ]
+     ],
+     "date-time": "2023-08-10T18:12:02Z",
+     "timestamp": 1691691122000
+    },
+    "score": 1,
+    "resource": {
+     "primary": {
+      "URL": "https://www.nature.com/articles/nature14539"
+     }
+    },
+    "subtitle": [],
+    "short-title": [],
+    "issued": {
+     "date-parts": [
+      [
+       2015,
+       5,
+       27
+      ]
+     ]
+    },
+    "references-count": 103,
+    "journal-issue": {
+     "issue": "7553",
+     "published-print": {
+      "date-parts": [
+       [
+        2015,
+        5,
+        28
+       ]
+      ]
+     }
+    },
+    "alternative-id": [
+     "BFnature14539"
+    ],
+    "URL": "https://doi.org/10.1038/nature14539",
+    "relation": {
+     "has-review": [
+      {
+       "id-type": "doi",
+       "id": "10.3410/f.725516248.793534414",
+       "asserted-by": "object"
+      }
+     ]
+    },
+    "ISSN": [
+     "0028-0836",
+     "1476-4687"
+    ],
+    "issn-type": [
+     {
+      "value": "0028-0836",
+      "type": "print"
+     },
+     {
+      "value": "1476-4687",
+      "type": "electronic"
+     }
+    ],
+    "subject": [],
+    "published": {
+     "date-parts": [
+      [
+       2015,
+       5,
+       27
+      ]
+     ]
+    },
+    "assertion": [
+     {
+      "value": "25 February 2015",
+      "order": 1,
+      "name": "received",
+      "label": "Received",
+      "group": {
+       "name": "ArticleHistory",
+       "label": "Article History"
+      }
+     },
+     {
+      "value": "1 May 2015",
+      "order": 2,
+      "name": "accepted",
+      "label": "Accepted",
+      "group": {
+       "name": "ArticleHistory",
+       "label": "Article History"
+      }
+     },
+     {
+      "value": "27 May 2015",
+      "order": 3,
+      "name": "first_online",
+      "label": "First Online",
+      "group": {
+       "name": "ArticleHistory",
+       "label": "Article History"
+      }
+     },
+     {
+      "value": "The authors declare no competing financial interests.",
+      "order": 1,
+      "name": "Ethics",
+      "group": {
+       "name": "EthicsHeading",
+       "label": "Competing interests"
+      }
+     }
+    ]
+   }
+  }
+ },
+ {
+  "key": "https://api.crossref.org/works/10.18653/v1/N19-1423",
+  "status": 200,
+  "body": {
+   "status": "ok",
+   "message-type": "work",
+   "message-version": "1.0.0",
+   "message": {
+    "indexed": {
+     "date-parts": [
+      [
+       2026,
+       11,
+       1
+      ]
+     ],
+     "date-time": "2026-11-01T15:36:02Z",
+     "timestamp": 1793547362807,
+     "version": "4.5.0"
+    },
+    "publisher-location": "Stroudsburg, PA, USA",
+    "reference-count": 0,
+    "publisher": "Association for Computational Linguistics",
+    "content-domain": {
+     "domain": [],
+     "crossmark-restriction": false
+    },
+    "short-container-title": [],
+    "published-print": {
+     "date-parts": [
+      [
+       2019
+      ]
+     ]
+    },
+    "DOI": "10.18653/v1/n19-1423",
+    "type": "proceedings-article",
+    "created": {
+     "date-parts": [
+      [
+       2019,
+       7,
+       21
+      ]
+     ],
+     "date-time": "2019-07-21T13:26:41Z",
+     "timestamp": 1563715601000
+    },
+    "page": "4171-4186",
+    "source": "Crossref",
+    "is-referenced-by-count": 11252,
+    "title": [
+     "BERT: Pre-training of Deep Bidirectional Transformers for Language Understanding"
+    ],
+    "prefix": "10.18653",
+    "author": [
+     {
+      "given": "Jacob",
+      "family": "Devlin",
+      "sequence": "first",
+      "affiliation": [],
+      "role": [
+       {
+        "vocabulary": "crossref",
+        "role": "author"
+       }
+      ]
+     },
+     {
+      "given": "Ming-Wei",
+      "family": "Chang",
+      "sequence": "additional",
+      "affiliation": [],
+      "role": [
+       {
+        "vocabulary": "crossref",
+        "role": "author"
+       }
+      ]
+     },
+     {
+      "given": "Kenton",
+      "family": "Lee",
+      "sequence": "additional",
+      "affiliation": [],
+      "role": [
+       {
+        "vocabulary": "crossref",
+        "role": "author"
+       }
+      ]
+     },
+     {
+      "given": "Kristina",
+      "family": "Toutanova",
+      "sequence": "additional",
+      "affiliation": [],
+      "role": [
+       {
+        "vocabulary": "crossref",
+        "role": "author"
+       }
+      ]
+     }
+    ],
+    "member": "1643",
+    "event": {
+     "name": "Proceedings of the 2019 Conference of the North American Chapter of the Association for Computational Linguistics: Human Language Technologies, Volume 1 (Long and Short Papers)",
+     "location": "Minneapolis, Minnesota",
+     "start": {
+      "date-parts": [
+       [
+        2019,
+        6
+       ]
+      ]
+     },
+     "end": {
+      "date-parts": [
+       [
+        2019,
+        6
+       ]
+      ]
+     }
+    },
+    "container-title": [
+     "Proceedings of the 2019 Conference of the North American Chapter of the Association for Computational Linguistics: Human Language Technologies, Volume 1 (Long and Short Papers)"
+    ],
+    "original-title": [],
+    "deposited": {
+     "date-parts": [
+      [
+       2026,
+       8,
+       31
+      ]
+     ],
+     "date-time": "2026-08-31T16:02:17Z",
+     "timestamp": 1788192137000
+    },
+    "score": 1,
+    "resource": {
+     "primary": {
+      "URL": "https://aclanthology.org/N19-1423"
+     }
+    },
+    "subtitle": [],
+    "short-title": [],
+    "issued": {
+     "date-parts": [
+      [
+       2019
+      ]
+     ]
+    },
+    "references-count": 0,
+    "URL": "https://doi.org/10.18653/v1/n19-1423",
+    "relation": {},
+    "subject": [],
+    "published": {
+     "date-parts": [
+      [
+       2019
+      ]
+     ]
+    }
+   }
+  }
+ },
+ {
+  "key": "https://api.crossref.org/works/10.1037/h0057532",
+  "status": 200,
+  "body": {
+   "status": "ok",
+   "message-type": "work",
+   "message-version": "1.0.0",
+   "message": {
+    "indexed": {
+     "date-parts": [
+      [
+       2026,
+       11,
+       1
+      ]
+     ],
+     "date-time": "2026-11-01T22:34:13Z",
+     "timestamp": 1793572453670,
+     "version": "4.5.0"
+    },
+    "reference-count": 0,
+    "publisher": "American Psychological Association (APA)",
+    "issue": "3",
+    "content-domain": {
+     "domain": [],
+     "crossmark-restriction": false
+    },
+    "short-container-title": [
+     "Journal of Applied Psychology"
+    ],
+    "DOI": "10.1037/h0057532",
+    "type": "journal-article",
+    "created": {
+     "date-parts": [
+      [
+       2006,
+       6,
+       7
+      ]
+     ],
+     "date-time": "2006-06-07T17:46:41Z",
+     "timestamp": 1149702401000
+    },
+    "page": "221-233",
+    "source": "Crossref",
+    "is-referenced-by-count": 4092,
+    "title": [
+     "A new readability yardstick."
+    ],
+    "prefix": "10.1037",
+    "volume": "32",
+    "author": [
+     {
+      "given": "Rudolph",
+      "family": "Flesch",
+      "sequence": "first",
+      "affiliation": [],
+      "role": [
+       {
+        "vocabulary": "crossref",
+        "role": "author"
+       }
+      ]
+     }
+    ],
+    "member": "15",
+    "published-online": {
+     "date-parts": [
+      [
+       1948
+      ]
+     ]
+    },
+    "container-title": [
+     "Journal of Applied Psychology"
+    ],
+    "original-title": [],
+    "language": "en",
+    "link": [
+     {
+      "URL": "http://psycnet.apa.org/journals/apl/32/3/221.pdf",
+      "content-type": "unspecified",
+      "content-version": "vor",
+      "intended-application": "similarity-checking"
+     }
+    ],
+    "deposited": {
+     "date-parts": [
+      [
+       2024,
+       2,
+       6
+      ]
+     ],
+     "date-time": "2024-02-06T17:21:57Z",
+     "timestamp": 1707240117000
+    },
+    "score": 1,
+    "resource": {
+     "primary": {
+      "URL": "https://doi.apa.org/doi/10.1037/h0057532"
+     }
+    },
+    "subtitle": [],
+    "short-title": [],
+    "issued": {
+     "date-parts": [
+      [
+       1948
+      ]
+     ]
+    },
+    "references-count": 0,
+    "journal-issue": {
+     "issue": "3",
+     "published-online": {
+      "date-parts": [
+       [
+        1948
+       ]
+      ]
+     }
+    },
+    "alternative-id": [
+     "1949-01274-001",
+     "18867058"
+    ],
+    "URL": "https://doi.org/10.1037/h0057532",
+    "relation": {},
+    "ISSN": [
+     "1939-1854",
+     "0021-9010"
+    ],
+    "issn-type": [
+     {
+      "value": "1939-1854",
+      "type": "electronic"
+     },
+     {
+      "value": "0021-9010",
+      "type": "print"
+     }
+    ],
+    "subject": [],
+    "published": {
+     "date-parts": [
+      [
+       1948
+      ]
+     ]
+    }
+   }
+  }
+ },
+ {
+  "key": "https://api.crossref.org/works?query.bibliographic=Readability+formulas+applied+to+textbooks+in+Brazilian+Portuguese+Martins+1996&rows=5&select=DOI%2Ctitle%2Cauthor%2Cissued%2Ccontainer-title%2Ctype%2Cupdate-to%2Cupdated-by%2CURL",
+  "status": 200,
+  "body": {
+   "status": "ok",
+   "message-type": "work-list",
+   "message-version": "1.0.0",
+   "message": {
+    "facets": {},
+    "total-results": 5713212,
+    "items": [
+     {
+      "DOI": "10.1086/459067",
+      "title": [
+       "Use of Readability Formulas in Selecting Textbooks"
+      ],
+      "author": [
+       {
+        "given": "Margaret",
+        "family": "Kerr",
+        "sequence": "first",
+        "affiliation": [],
+        "role": [
+         {
+          "role": "author",
+          "vocabulary": "crossref"
+         }
+        ]
+       }
+      ],
+      "issued": {
+       "date-parts": [
+        [
+         1949,
+         3
+        ]
+       ]
+      },
+      "container-title": [
+       "The Elementary School Journal"
+      ],
+      "type": "journal-article",
+      "URL": "https://doi.org/10.1086/459067"
+     },
+     {
+      "DOI": "10.1080/00220973.1944.11019840",
+      "title": [
+       "Use of Readability Formulas in Selecting American History Textbooks"
+      ],
+      "author": [
+       {
+        "given": "Charles S.",
+        "family": "Evans",
+        "sequence": "first",
+        "affiliation": [],
+        "role": [
+         {
+          "role": "author",
+          "vocabulary": "crossref"
+         }
+        ]
+       }
+      ],
+      "issued": {
+       "date-parts": [
+        [
+         1987,
+         5
+        ]
+       ]
+      },
+      "container-title": [
+       "The Social Studies"
+      ],
+      "type": "journal-article",
+      "URL": "https://doi.org/10.1080/00220973.1944.11019840"
+     },
+     {
+      "DOI": "10.21236/ada086408",
+      "title": [
+       "Usefulness of Readability Formulas for Achieving Army Readability Objectives: Research and State-of-the-Art-Applied to the Army's Problem"
+      ],
+      "author": [
+       {
+        "given": "Richard P.",
+        "family": "Kern",
+        "sequence": "first",
+        "affiliation": [],
+        "role": [
+         {
+          "role": "author",
+          "vocabulary": "crossref"
+         }
+        ]
+       }
+      ],
+      "issued": {
+       "date-parts": [
+        [
+         1980,
+         1,
+         1
+        ]
+       ]
+      },
+      "type": "report",
+      "URL": "https://doi.org/10.21236/ada086408"
+     },
+     {
+      "DOI": "10.58809/fpqn7573",
+      "title": [
+       "A Study of the Fry and Dale-Chall Readability Formulas Applied to Occupational Information"
+      ],
+      "author": [
+       {
+        "sequence": "additional",
+        "affiliation": [],
+        "role": [
+         {
+          "role": "author",
+          "vocabulary": "crossref"
+         }
+        ]
+       },
+       {
+        "given": "Rebekah",
+        "family": "Callison",
+        "sequence": "first",
+        "affiliation": [],
+        "role": [
+         {
+          "role": "author",
+          "vocabulary": "crossref"
+         }
+        ]
+       }
+      ],
+      "issued": {
+       "date-parts": [
+        [
+         null
+        ]
+       ]
+      },
+      "type": "dissertation",
+      "URL": "https://doi.org/10.58809/fpqn7573"
+     },
+     {
+      "DOI": "10.17771/pucrio.acad.60691",
+      "title": [
+       "INFORMATION EXTRACTION FROM LEGAL OPINIONS IN BRAZILIAN PORTUGUESE"
+      ],
+      "author": [
+       {
+        "given": "GUSTAVO",
+        "family": "MARTINS CAMPOS COELHO",
+        "sequence": "first",
+        "affiliation": [],
+        "role": [
+         {
+          "role": "author",
+          "vocabulary": "crossref"
+         }
+        ]
+       }
+      ],
+      "issued": {
+       "date-parts": [
+        [
+         null
+        ]
+       ]
+      },
+      "type": "dissertation",
+      "URL": "https://doi.org/10.17771/pucrio.acad.60691"
+     }
+    ],
+    "items-per-page": 5,
+    "query": {
+     "start-index": 0,
+     "search-terms": null
+    }
+   }
+  }
+ },
+ {
+  "key": "https://api.openalex.org/works?per-page=5&search=Readability+formulas+applied+to+textbooks+in+Brazilian+Portuguese+Martins+1996",
+  "status": 200,
+  "body": {
+   "meta": {
+    "notice": "No API key, so this request shares one free daily budget ($0.10) with everyone on your network's IP address. Get a free key with its own $1/day at https://openalex.org/settings/api and add api_key=YOUR_KEY to your requests. An AI agent can get one for its user in one call: POST https://api.openalex.org/api-keys with {\"email\": \"<your user's email>\"}; we email them a link, and the key works once they click it. Docs for agents: https://help.openalex.org/llms.txt",
+    "count": 168,
+    "db_response_time_ms": 253,
+    "page": 1,
+    "per_page": 5,
+    "groups_count": null,
+    "x_query": {
+     "oql": "get works with (Readability formulas applied to textbooks in Brazilian Portuguese Martins 1996) in the full text",
+     "x_new_oql": "get works with (Readability formulas applied to textbooks in Brazilian Portuguese Martins 1996) in the full text",
+     "oqo": {
+      "get_rows": "works",
+      "filter_rows": [
+       {
+        "column_id": "fulltext.search",
+        "value": "Readability formulas applied to textbooks in Brazilian Portuguese Martins 1996",
+        "operator": "has"
+       }
+      ]
+     },
+     "url": "/works?filter=fulltext.search:Readability formulas applied to textbooks in Brazilian Portuguese Martins 1996&per_page=5",
+     "order": "best matches first",
+     "order_default": true
+    },
+    "cost_usd": 0.001
+   },
+   "results": [
+    {
+     "id": "https://openalex.org/W4411902287",
+     "doi": "https://doi.org/10.3390/data10070106",
+     "title": "Exploring Legislative Textual Data in Brazilian Portuguese: Readability Analysis and Knowledge Graph Generation",
+     "display_name": "Exploring Legislative Textual Data in Brazilian Portuguese: Readability Analysis and Knowledge Graph Generation",
+     "publication_year": 2025,
+     "primary_location": {
+      "source": {
+       "display_name": "Data"
+      }
+     },
+     "authorships": [
+      {
+       "author": {
+        "id": "https://openalex.org/A5024240999",
+        "display_name": "Gisliany Alves",
+        "orcid": "https://orcid.org/0000-0002-6037-9660",
+        "observed_orcids": [
+         "https://orcid.org/0000-0002-6037-9660"
+        ]
+       }
+      },
+      {
+       "author": {
+        "id": "https://openalex.org/A5052553610",
+        "display_name": "Breno Santana Santos",
+        "orcid": "https://orcid.org/0000-0002-8790-2546",
+        "observed_orcids": [
+         "https://orcid.org/0000-0002-8790-2546"
+        ]
+       }
+      },
+      {
+       "author": {
+        "id": "https://openalex.org/A5078320293",
+        "display_name": "Marianne Silva",
+        "orcid": "https://orcid.org/0000-0002-8277-7571",
+        "observed_orcids": [
+         "https://orcid.org/0000-0002-8277-7571"
+        ]
+       }
+      },
+      {
+       "author": {
+        "id": "https://openalex.org/A5079474193",
+        "display_name": "Ivanovitch Medeiros Dantas da Silva",
+        "orcid": "https://orcid.org/0000-0002-0116-6489",
+        "observed_orcids": [
+         "https://orcid.org/0000-0002-0116-6489"
+        ]
+       }
+      }
+     ],
+     "is_retracted": false
+    },
+    {
+     "id": "https://openalex.org/W2741201359",
+     "doi": "https://doi.org/10.18653/v1/e17-4010",
+     "title": "A Multi-aspect Analysis of Automatic Essay Scoring for Brazilian Portuguese",
+     "display_name": "A Multi-aspect Analysis of Automatic Essay Scoring for Brazilian Portuguese",
+     "publication_year": 2017,
+     "primary_location": {
+      "source": {
+       "display_name": "Conference of the European Chapter of the Association for Computational Linguistics: Student Research Workshop (EACL SRW)"
+      }
+     },
+     "authorships": [
+      {
+       "author": {
+        "id": "https://openalex.org/A5039335917",
+        "display_name": "Evelin Carvalho Freire de Amorim",
+        "orcid": "https://orcid.org/0000-0003-1343-939X",
+        "observed_orcids": [
+         "https://orcid.org/0000-0003-1343-939X"
+        ]
+       }
+      },
+      {
+       "author": {
+        "id": "https://openalex.org/A5086714399",
+        "display_name": "Adriano Veloso",
+        "orcid": "https://orcid.org/0000-0002-9177-4954",
+        "observed_orcids": [
+         "https://orcid.org/0000-0002-9177-4954"
+        ]
+       }
+      }
+     ],
+     "is_retracted": false
+    },
+    {
+     "id": "https://openalex.org/W7222126970",
+     "doi": "https://doi.org/10.5753/stil.2026.24535",
+     "title": "Vidya Syl: A syllable division algorithm for Brazilian Portuguese adhering to the Common Orthographic Vocabulary of the Portuguese Language",
+     "display_name": "Vidya Syl: A syllable division algorithm for Brazilian Portuguese adhering to the Common Orthographic Vocabulary of the Portuguese Language",
+     "publication_year": 2026,
+     "primary_location": {
+      "source": {
+       "display_name": "Simpósio Brasileiro de Tecnologia da Informação e da Linguagem Humana (STIL)"
+      }
+     },
+     "authorships": [
+      {
+       "author": {
+        "id": "https://openalex.org/A5000397830",
+        "display_name": "Roges Horacio Grandi",
+        "orcid": "https://orcid.org/0000-0001-9987-379X",
+        "observed_orcids": [
+         "https://orcid.org/0000-0001-9987-379X"
+        ]
+       }
+      },
+      {
+       "author": {
+        "id": "https://openalex.org/A5034194139",
+        "display_name": "Leandro Krug Wives",
+        "orcid": "https://orcid.org/0000-0002-8391-446X",
+        "observed_orcids": [
+         "https://orcid.org/0000-0002-8391-446X"
+        ]
+       }
+      },
+      {
+       "author": {
+        "id": "https://openalex.org/A5122600962",
+        "display_name": "Maria José Bocorny Finatto",
+        "orcid": null,
+        "observed_orcids": []
+       }
+      },
+      {
+       "author": {
+        "id": "https://openalex.org/A5018391985",
+        "display_name": "Raquel Salcedo Gomes",
+        "orcid": "https://orcid.org/0000-0001-9497-513X",
+        "observed_orcids": [
+         "https://orcid.org/0000-0001-9497-513X"
+        ]
+       }
+      },
+      {
+       "author": {
+        "id": "https://openalex.org/A5158826274",
+        "display_name": "Bianca Pasqualini",
+        "orcid": null,
+        "observed_orcids": []
+       }
+      }
+     ],
+     "is_retracted": false
+    },
+    {
+     "id": "https://openalex.org/W3120428889",
+     "doi": "https://doi.org/10.17851/2237-2083.29.2.959-998",
+     "title": "Inteligibilidade e convencionalidade em textos de divulgação da área médica em português brasileiro / Readability and conventionality in expository texts in Brazilian Portuguese",
+     "display_name": "Inteligibilidade e convencionalidade em textos de divulgação da área médica em português brasileiro / Readability and conventionality in expository texts in Brazilian Portuguese",
+     "publication_year": 2021,
+     "primary_location": {
+      "source": {
+       "display_name": "Revista de Estudos da Linguagem"
+      }
+     },
+     "authorships": [
+      {
+       "author": {
+        "id": "https://openalex.org/A5073714918",
+        "display_name": "Yuli Souza Carvalho",
+        "orcid": "https://orcid.org/0000-0002-7914-8459",
+        "observed_orcids": [
+         "https://orcid.org/0000-0002-7914-8459"
+        ]
+       }
+      },
+      {
+       "author": {
+        "id": "https://openalex.org/A5023544534",
+        "display_name": "Rozane Rodrigues Rebechi",
+        "orcid": "https://orcid.org/0000-0002-1878-7548",
+        "observed_orcids": [
+         "https://orcid.org/0000-0002-1878-7548"
+        ]
+       }
+      }
+     ],
+     "is_retracted": false
+    },
+    {
+     "id": "https://openalex.org/W2971016453",
+     "doi": "https://doi.org/10.1007/978-3-030-28577-7_10",
+     "title": "Analyzing the Adequacy of Readability Indicators to a Non-English Language",
+     "display_name": "Analyzing the Adequacy of Readability Indicators to a Non-English Language",
+     "publication_year": 2019,
+     "primary_location": {
+      "source": {
+       "display_name": "Lecture notes in computer science"
+      }
+     },
+     "authorships": [
+      {
+       "author": {
+        "id": "https://openalex.org/A5089455131",
+        "display_name": "Hélder Antunes",
+        "orcid": null,
+        "observed_orcids": []
+       }
+      },
+      {
+       "author": {
+        "id": "https://openalex.org/A5061671893",
+        "display_name": "Carla Teixeira Lopes",
+        "orcid": "https://orcid.org/0000-0002-4202-791X",
+        "observed_orcids": [
+         "https://orcid.org/0000-0002-4202-791X"
+        ]
+       }
+      }
+     ],
+     "is_retracted": false
+    }
+   ],
+   "group_by": []
+  }
+ },
+ {
+  "key": "https://api.crossref.org/works/10.9999/rbei.2021.0042",
+  "status": 404,
+  "body": "Resource not found."
+ },
+ {
+  "key": "https://api.openalex.org/works/doi:10.9999/rbei.2021.0042",
+  "status": 404,
+  "body": "<!doctype html>\n<html lang=en>\n<title>404 Not Found</title>\n<h1>Not Found</h1>\n<p>The requested URL was not found on the server. If you entered the URL manually please check your spelling and try again.</p>\n"
+ },
+ {
+  "key": "https://api.crossref.org/works?query.bibliographic=Detec%C3%A7%C3%A3o+qu%C3%A2ntica+de+pl%C3%A1gio+em+redes+neurais+hiperb%C3%B3licas+para+manuscritos+lus%C3%B3fonos+Pereira+2021&rows=5&select=DOI%2Ctitle%2Cauthor%2Cissued%2Ccontainer-title%2Ctype%2Cupdate-to%2Cupdated-by%2CURL",
+  "status": 200,
+  "body": {
+   "status": "ok",
+   "message-type": "work-list",
+   "message-version": "1.0.0",
+   "message": {
+    "facets": {},
+    "total-results": 1963312,
+    "items": [
+     {
+      "DOI": "10.11606/d.18.2024.tde-31102024-114415",
+      "title": [
+       "Avaliação de redes neurais profundas para detecção veicular em imagens de satélite"
+      ],
+      "author": [
+       {
+        "given": "Crhistian Emilio",
+        "family": "Ribeiro",
+        "sequence": "first",
+        "affiliation": [],
+        "role": [
+         {
+          "role": "author",
+          "vocabulary": "crossref"
+         }
+        ]
+       }
+      ],
+      "issued": {
+       "date-parts": [
+        [
+         null
+        ]
+       ]
+      },
+      "type": "dissertation",
+      "URL": "https://doi.org/10.11606/d.18.2024.tde-31102024-114415"
+     },
+     {
+      "DOI": "10.11606/003191231",
+      "title": [
+       "Redes neurais convolucionais para detecção de impressões digitais em prontuários civis"
+      ],
+      "author": [
+       {
+        "sequence": "additional",
+        "affiliation": [],
+        "role": [
+         {
+          "role": "author",
+          "vocabulary": "crossref"
+         }
+        ]
+       },
+       {
+        "given": "Rafaela Nunes",
+        "family": "Bonacorso",
+        "sequence": "first",
+        "affiliation": [],
+        "role": [
+         {
+          "role": "author",
+          "vocabulary": "crossref"
+         }
+        ]
+       }
+      ],
+      "issued": {
+       "date-parts": [
+        [
+         null
+        ]
+       ]
+      },
+      "type": "dissertation",
+      "URL": "https://doi.org/10.11606/003191231"
+     },
+     {
+      "DOI": "10.11606/d.18.2010.tde-17012011-160008",
+      "title": [
+       "Utilização de redes neurais artificiais para detecção de padrões de vazamento em dutos"
+      ],
+      "author": [
+       {
+        "given": "Fernando Guimarães",
+        "family": "Aguiar",
+        "sequence": "first",
+        "affiliation": [],
+        "role": [
+         {
+          "vocabulary": "crossref",
+          "role": "author"
+         }
+        ]
+       }
+      ],
+      "issued": {
+       "date-parts": [
+        [
+         null
+        ]
+       ]
+      },
+      "type": "dissertation",
+      "URL": "https://doi.org/10.11606/d.18.2010.tde-17012011-160008"
+     },
+     {
+      "DOI": "10.11606/d.85.2025.tde-13022026-141757",
+      "title": [
+       "Análise de redes neurais artificiais para detecção de falhas de sensores em reatores nucleares"
+      ],
+      "author": [
+       {
+        "given": "Frederico Emidio",
+        "family": "Wu",
+        "sequence": "first",
+        "affiliation": [],
+        "role": [
+         {
+          "role": "author",
+          "vocabulary": "crossref"
+         }
+        ]
+       }
+      ],
+      "issued": {
+       "date-parts": [
+        [
+         null
+        ]
+       ]
+      },
+      "type": "dissertation",
+      "URL": "https://doi.org/10.11606/d.85.2025.tde-13022026-141757"
+     },
+     {
+      "DOI": "10.17771/pucrio.acad.9017",
+      "title": [
+       "RECONHECIMENTO DE DÍGITOS MANUSCRITOS POR REDES NEURAIS"
+      ],
+      "author": [
+       {
+        "given": "MARIA",
+        "family": "ANGELICA PEREIRA FREIXINHO",
+        "sequence": "first",
+        "affiliation": [],
+        "role": [
+         {
+          "role": "author",
+          "vocabulary": "crossref"
+         }
+        ]
+       }
+      ],
+      "issued": {
+       "date-parts": [
+        [
+         null
+        ]
+       ]
+      },
+      "type": "dissertation",
+      "URL": "https://doi.org/10.17771/pucrio.acad.9017"
+     }
+    ],
+    "items-per-page": 5,
+    "query": {
+     "start-index": 0,
+     "search-terms": null
+    }
+   }
+  }
+ },
+ {
+  "key": "https://api.openalex.org/works?per-page=5&search=Detec%C3%A7%C3%A3o+qu%C3%A2ntica+de+pl%C3%A1gio+em+redes+neurais+hiperb%C3%B3licas+para+manuscritos+lus%C3%B3fonos+Pereira+2021",
+  "status": 200,
+  "body": {
+   "meta": {
+    "notice": "No API key, so this request shares one free daily budget ($0.10) with everyone on your network's IP address. Get a free key with its own $1/day at https://openalex.org/settings/api and add api_key=YOUR_KEY to your requests. An AI agent can get one for its user in one call: POST https://api.openalex.org/api-keys with {\"email\": \"<your user's email>\"}; we email them a link, and the key works once they click it. Docs for agents: https://help.openalex.org/llms.txt",
+    "count": 0,
+    "db_response_time_ms": 389,
+    "page": 1,
+    "per_page": 5,
+    "groups_count": null,
+    "x_query": {
+     "oql": "get works with (Detecção quântica de plágio em redes neurais hiperbólicas para manuscritos lusófonos Pereira 2021) in the full text",
+     "x_new_oql": "get works with (Detecção quântica de plágio em redes neurais hiperbólicas para manuscritos lusófonos Pereira 2021) in the full text",
+     "oqo": {
+      "get_rows": "works",
+      "filter_rows": [
+       {
+        "column_id": "fulltext.search",
+        "value": "Detecção quântica de plágio em redes neurais hiperbólicas para manuscritos lusófonos Pereira 2021",
+        "operator": "has"
+       }
+      ]
+     },
+     "url": "/works?filter=fulltext.search:Detec%C3%A7%C3%A3o qu%C3%A2ntica de pl%C3%A1gio em redes neurais hiperb%C3%B3licas para manuscritos lus%C3%B3fonos Pereira 2021&per_page=5",
+     "order": "best matches first",
+     "order_default": true
+    },
+    "cost_usd": 0.001
+   },
+   "results": [],
+   "group_by": []
+  }
+ }
+]

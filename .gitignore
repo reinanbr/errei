@@ -1,0 +1,12 @@
+.venv/
+dist/
+build/
+*.egg-info/
+__pycache__/
+.coverage
+coverage.xml
+.mypy_cache/
+.ruff_cache/
+.pytest_cache/
+treino/dados/
+treino/modelos/

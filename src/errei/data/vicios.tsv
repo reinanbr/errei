@@ -1,0 +1,12 @@
+# expressão regular (minúsculas, sem acento opcional)	mensagem	sugestão
+\ba nível de\b	"a nível de" é considerado inadequado	em nível de; quanto a; no âmbito de
+\bmuito(s|a|as)?\b	intensificador vago ("muito")	quantifique ou elimine
+\bbastante(s)?\b	intensificador vago ("bastante")	quantifique ou elimine
+\bcoisas?\b	termo vago ("coisa")	use o termo preciso
+\batravés d[eoa]s?\b	"através de" indica atravessamento	por meio de; mediante (se não for atravessamento)
+\bsendo que\b	"sendo que" é muleta de coesão	e; pois; enquanto; reestruture a frase
+\bhoje em dia\b|\bnos dias de hoje\b	expressão coloquial	atualmente
+\bpode-se dizer que\b	expressão de preenchimento	afirme diretamente
+\b(?:o|a|os|as) mesm[oa]s? (?:foi|foram|é|são|será|serão|possui|possuem|apresenta|apresentam)\b	"o mesmo" como pronome é desaconselhado	ele/ela; isso; repita o substantivo
+\bpara se ter uma ideia\b	expressão coloquial	elimine
+\bde suma importância\b	clichê	importante; essencial

@@ -1,0 +1,8 @@
+# expressão regular	mensagem	sugestão
+\bimplica(?:m|r|ria|riam|rá|rão|ndo)?\s+em\b	"implicar" no sentido de acarretar é transitivo direto	implica X (sem "em")
+\bvisa(?:m|r|ndo|va|vam)?\s+(?:o|a|os|as)\b	"visar" (ter como objetivo) rege a preposição "a" na norma culta	visa ao / visa à (ou "tem por objetivo")
+\bobedece(?:m|r|u|ram)?\s+(?:o|a|os|as)\b	"obedecer" rege a preposição "a"	obedece ao / à
+\bassisti(?:r|u|ram|mos)\s+(?:o|os)\s+(?:filme|jogo|vídeo|programa|apresentação)	"assistir" (ver) rege a preposição "a"	assistir ao
+\bprefer\w*\b[^.;]{0,60}?\bdo que\b	"preferir" rege "a", sem "do que"	prefere X a Y
+\bcheg(?:a|ar|ou|aram|am|ando)\s+em\b	"chegar" rege a preposição "a" na norma culta	chegar a
+\bdevem haver\b|\bpodem haver\b|\bdeveriam haver\b|\bpoderiam haver\b	"haver" (existir) é impessoal; o auxiliar fica no singular	deve haver / pode haver

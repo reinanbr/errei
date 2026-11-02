@@ -1,0 +1,150 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: Test (Python ${{ matrix.python }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ["3.10", "3.11", "3.12", "3.13"]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up uv + Python
+        uses: astral-sh/setup-uv@v5
+        with:
+          python-version: ${{ matrix.python }}
+          enable-cache: true
+
+      - name: Fonts for PDF reports
+        run: sudo apt-get install -y --no-install-recommends fonts-dejavu-core
+
+      - name: Install (all extras + dev; sem o modelo, que é pesado)
+        run: |
+          uv venv
+          uv pip install -e '.[all,dev]'
+
+      - name: Lint
+        run: |
+          uv run --no-sync ruff check src tests
+          uv run --no-sync ruff format --check src tests
+
+      - name: Type check
+        run: uv run --no-sync mypy
+
+      - name: Run tests (offline; sem LanguageTool e sem rede)
+        run: uv run --no-sync pytest --cov --cov-report=term --cov-report=xml
+
+      - name: Coverage summary
+        if: matrix.python == '3.12'
+        run: |
+          echo "## Test Coverage" >> "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+          uv run --no-sync coverage report | tail -1 >> "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    needs: test
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          python-version: "3.12"
+
+      - name: Build wheel and sdist
+        run: uv build --out-dir dist
+
+      - name: Check metadata
+        run: uvx twine check dist/*
+
+      - name: Smoke test (instala o wheel limpo e audita a fixture)
+        run: |
+          uv venv /tmp/smoke
+          VIRTUAL_ENV=/tmp/smoke uv pip install "$(ls dist/*.whl)[all]"
+          /tmp/smoke/bin/errei --version
+          /tmp/smoke/bin/errei explain --list | head -3
+          set +e
+          ERREI_NO_LANGUAGETOOL=1 /tmp/smoke/bin/errei tests/fixtures/artigo_exemplo \
+            --no-user-config --pdf /tmp/smoke/relatorio.pdf --resumo
+          code=$?
+          set -e
+          # 1 = o artigo de exemplo tem erros plantados (esperado)
+          test "$code" -eq 1
+          head -c 5 /tmp/smoke/relatorio.pdf | grep -q '%PDF'
+
+      - name: Upload dist
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: dist/
+
+  release:
+    name: Release
+    runs-on: ubuntu-latest
+    needs: build
+    if: startsWith(github.ref, 'refs/tags/v')
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          python-version: "3.12"
+
+      - name: Check tag matches package version
+        env:
+          TAG: ${{ github.ref_name }}
+        run: |
+          PKG="$(grep -m1 '^version' pyproject.toml | sed 's/.*"\(.*\)".*/\1/')"
+          if [ "v${PKG}" != "${TAG}" ]; then
+            echo "::error::tag ${TAG} não confere com a versão do pyproject (${PKG})"
+            exit 1
+          fi
+
+      - name: Build release artifacts
+        run: |
+          uv build --out-dir dist
+          cp install.sh dist/install.sh
+          (cd dist && sha256sum *.whl *.tar.gz install.sh > sha256sums.txt)
+          cat dist/sha256sums.txt
+
+      - name: Release notes from CHANGELOG
+        env:
+          TAG: ${{ github.ref_name }}
+        run: |
+          VER="${TAG#v}"
+          awk -v v="$VER" '
+            $0 ~ "^## \\[" v "\\]" {on=1; next}
+            on && /^## \[/ {exit}
+            on {print}
+          ' CHANGELOG.md > dist/NOTES.md
+          test -s dist/NOTES.md || echo "Veja o CHANGELOG.md." > dist/NOTES.md
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          body_path: dist/NOTES.md
+          files: |
+            dist/*.whl
+            dist/*.tar.gz
+            dist/install.sh
+            dist/sha256sums.txt
+          generate_release_notes: true

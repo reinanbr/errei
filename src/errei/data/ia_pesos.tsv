@@ -1,0 +1,9 @@
+# peso de cada indício no escore logístico (editável)	valor
+bias	-4.0
+burstiness	1.5
+repeticao	1.0
+diversidade	0.5
+conectivos	1.5
+cliches	3.0
+uniformidade	0.8
+sem_marcas	1.5

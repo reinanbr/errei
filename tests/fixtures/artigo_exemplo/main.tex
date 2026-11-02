@@ -1,0 +1,50 @@
+\documentclass[article,12pt,oneside,a4paper,english,brazil,sumario=tradicional]{abntex2}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{graphicx}
+\usepackage[alf]{abntex2cite}
+
+\titulo{Revisão automatizada de manuscritos científicos em português}
+\autor{Fulana de Tal}
+\data{2026}
+
+\begin{document}
+\maketitle
+
+\begin{resumoumacoluna}
+Este trabalho apresenta uma ferramenta de linha de comando que audita artigos
+científicos escritos em LaTeX. A ferramenta verifica estrutura, referências,
+normas da ABNT e qualidade da escrita, e aponta indícios que merecem revisão
+humana. Os resultados em um artigo de exemplo mostram que os problemas
+plantados são encontrados com a linha correta, o que facilita a correção
+antes da submissão a um periódico.
+
+\vspace{\onelineskip}
+\noindent
+\textbf{Palavras-chave}: revisão automatizada. processamento de linguagem natural. escrita acadêmica.
+\end{resumoumacoluna}
+
+\renewcommand{\resumoname}{Abstract}
+\begin{otherlanguage*}{english}
+\begin{resumoumacoluna}
+This paper presents a command-line tool that audits scientific papers written
+in LaTeX. The tool checks structure, references, ABNT standards and writing
+quality, and points out signals that deserve human review. Results on a sample
+paper show that the planted problems are found at the correct line, which helps
+authors fix them before submitting to a journal.
+
+\vspace{\onelineskip}
+\noindent
+\textbf{Keywords}: automated review. natural language processing. academic writing.
+\end{resumoumacoluna}
+\end{otherlanguage*}
+
+\textual
+\input{secoes/introducao}
+\input{secoes/metodologia}
+\input{secoes/resultados}
+\input{secoes/conclusao}
+
+\postextual
+\bibliography{referencias}
+\end{document}

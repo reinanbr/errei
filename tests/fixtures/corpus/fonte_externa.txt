@@ -1,0 +1,4 @@
+Texto de um trabalho externo usado como corpus de comparação local.
+Na ferramenta descrita, primeiro, os arquivos são descobertos; depois, o texto é extraído e
+analisado por verificadores independentes, o que permite combinar resultados de forma modular.
+Outro parágrafo sem relação nenhuma com o artigo de exemplo, falando de agricultura e solos.

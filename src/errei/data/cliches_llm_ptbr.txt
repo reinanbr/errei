@@ -1,0 +1,40 @@
+# frases-clichê frequentes em texto gerado por LLMs em pt-BR (minúsculas; expressão regular simples)
+# linhas com '~' só contam no escore (são conectivos comuns); as demais também geram IA-CLICHE-001
+é importante (?:ressaltar|destacar|salientar|notar|mencionar|enfatizar)
+vale (?:ressaltar|destacar|salientar|mencionar|lembrar) que
+cabe (?:ressaltar|destacar|salientar) que
+desempenha(?:m)? um papel (?:crucial|fundamental|essencial|vital|central|importante)
+no cenário atual
+no mundo atual
+nos dias atuais
+~em suma
+~em síntese
+~em última análise
+~nesse sentido
+~diante desse cenário
+~diante disso
+~dessa forma
+~além disso
+~por outro lado
+abordagem (?:abrangente|holística|robusta|inovadora)
+solução (?:inovadora|robusta|abrangente|eficaz)
+(?:inovadora|robusta|abrangente) e (?:eficaz|eficiente|robusta|abrangente)
+avanço significativo
+impacta(?:m)? diretamente
+é fundamental compreender
+é essencial compreender
+compreender (?:a importância|o papel)
+mergulhar (?:no|na|nos|nas)
+~no âmbito de
+~ao longo d[oa]s? (?:anos|últimos anos)
+cada vez mais (?:importante|relevante|presente)
+uma ferramenta (?:poderosa|valiosa|essencial)
+desafios enfrentados
+potencial transformador
+navegar (?:pelos|pelas|no|na) (?:desafios|complexidades)
+em constante evolução
+~a fim de garantir
+garantindo assim
+promovendo assim
+~contribuindo (?:assim )?para
+~de maneira (?:significativa|eficaz|eficiente)

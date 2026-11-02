@@ -1,0 +1,28 @@
+\section{Metodologia}\label{sec:metodologia}
+
+A ferramenta segue o fluxo mostrado na Figura~\ref{fig:inexistente}. Primeiro, os
+arquivos são descobertos; depois, o texto é extraído e analisado por verificadores
+independentes, conforme sugerido por \citeonline{inventado2021}.
+
+\begin{figure}[htb]
+  \centering
+  \includegraphics[width=0.5\textwidth]{figuras/fluxo.png}
+  \label{fig:fluxo}
+\end{figure}
+
+A legibilidade é estimada pelo índice de \citeonline{flesch1948} apud
+\citeonline{martins1996}, adaptado ao português. A Tabela~\ref{tab:metricas}
+resume as métricas utilizadas.
+
+\begin{table}[htb]
+  \caption{Métricas de escrita utilizadas}\label{tab:metricas}
+  \begin{tabular}{ll}
+    Métrica & Faixa \\
+    Flesch & 50--75 \\
+  \end{tabular}
+\end{table}
+
+A pontuação final é dada por
+\begin{equation}
+  F = 248{,}835 - 1{,}015\,\mathrm{ASL} - 84{,}6\,\mathrm{ASW}.
+\end{equation}

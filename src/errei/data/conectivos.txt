@@ -1,0 +1,64 @@
+# conectivos/marcadores de coesão (um por linha, minúsculas)
+além disso
+ademais
+portanto
+logo
+assim
+dessa forma
+desse modo
+deste modo
+desta forma
+por conseguinte
+consequentemente
+em consequência
+entretanto
+contudo
+todavia
+no entanto
+porém
+mas
+embora
+apesar de
+apesar disso
+ainda que
+mesmo que
+por outro lado
+em contrapartida
+ao passo que
+enquanto
+ou seja
+isto é
+por exemplo
+a saber
+como
+pois
+porque
+visto que
+uma vez que
+já que
+dado que
+de modo que
+de forma que
+a fim de
+para que
+com isso
+sendo assim
+nesse sentido
+neste sentido
+em primeiro lugar
+primeiramente
+em seguida
+posteriormente
+por fim
+finalmente
+em suma
+em síntese
+em resumo
+de fato
+com efeito
+igualmente
+da mesma forma
+do mesmo modo
+similarmente
+caso
+se
