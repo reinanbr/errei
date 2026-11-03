@@ -20,6 +20,7 @@ _BUILTIN = {
     "plagio": "errei.checkers.plagio:PlagioChecker",
     "ia": "errei.checkers.ia:IaChecker",
     "periodico": "errei.checkers.periodico:PeriodicoChecker",
+    "referencia": "errei.checkers.referencia:ReferenciaChecker",
 }
 
 

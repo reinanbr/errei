@@ -70,6 +70,7 @@ class HttpClient:
         default_interval: float = DEFAULT_INTERVAL,
         backoff: float = 1.0,
         refresh: bool = False,
+        openalex_key: str = "",
     ) -> None:
         self.email = email.strip()
         ua = f"errei/{__version__} (verificador de artigos; python-httpx)"
@@ -85,6 +86,8 @@ class HttpClient:
         self.cache_dir = cache_dir
         # --sem-cache: não lê o cache (consulta as fontes de novo), mas grava o resultado
         self.refresh = refresh
+        # chave do OpenAlex (orçamento próprio); vai em cabeçalho, nunca na URL nem no cache
+        self.openalex_key = openalex_key.strip()
         self.limiter = RateLimiter(intervals, default_interval)
         self.retries = retries
         self.backoff = backoff
@@ -125,8 +128,11 @@ class HttpClient:
         if self.disabled(host):
             return None
         params = dict(params or {})
-        if self.email and host == "api.openalex.org":
-            params.setdefault("mailto", self.email)
+        if host == "api.openalex.org":
+            if self.email:
+                params.setdefault("mailto", self.email)
+            if self.openalex_key:
+                headers = {"Authorization": f"Bearer {self.openalex_key}", **(headers or {})}
         last_err = ""
         for attempt in range(self.retries + 1):
             self.limiter.wait(host)
@@ -156,8 +162,13 @@ class HttpClient:
                 self._disabled.setdefault(host, last_err)
         return None
 
-    def get_bytes(self, url: str, *, max_bytes: int = 30 * 1024 * 1024) -> bytes | None:
-        """GET binário (PDFs de acesso aberto) com cache em arquivo e limite de tamanho."""
+    def get_bytes(
+        self, url: str, *, max_bytes: int = 30 * 1024 * 1024, cache: bool = True
+    ) -> bytes | None:
+        """GET binário (PDFs de acesso aberto) com cache em arquivo e limite de tamanho.
+
+        ``cache=False`` não lê nem grava o arquivo (usado pela referência por área, que não
+        guarda textos de obras)."""
         import hashlib
 
         host = urlsplit(url).hostname or ""
@@ -165,7 +176,7 @@ class HttpClient:
             return None
         self.hosts.add(host)
         name = hashlib.sha256(url.encode()).hexdigest() + ".bin"
-        if self.cache_dir is not None and not self.refresh:
+        if cache and self.cache_dir is not None and not self.refresh:
             hit = pdf_get(self.cache_dir, name)
             if hit is not None:
                 return hit
@@ -189,7 +200,7 @@ class HttpClient:
                 self._last_err[host] = "download falhou"
             return None
         data = b"".join(chunks)
-        if self.cache_dir is not None:
+        if cache and self.cache_dir is not None:
             pdf_put(self.cache_dir, name, data)
         return data
 

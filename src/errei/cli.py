@@ -24,7 +24,7 @@ app = typer.Typer(
     context_settings={"help_option_names": ["-h", "--help"]},
 )
 
-SUBCOMMANDS = {"audit", "init", "doctor", "explain", "modelo", "cache"}
+SUBCOMMANDS = {"audit", "init", "doctor", "explain", "modelo", "cache", "referencia"}
 
 
 class OutFormat(str, Enum):
@@ -112,6 +112,14 @@ def audit(
         bool,
         typer.Option("--resumo", help="Na tela, só os principais problemas e melhorias."),
     ] = False,
+    referencia: Annotated[
+        str | None,
+        typer.Option(
+            "--referencia",
+            help="Compara o trabalho com a referência empírica da --area: brasil ou mundo "
+            "(construa antes com 'errei referencia construir').",
+        ),
+    ] = None,
     sem_cache: Annotated[
         bool,
         typer.Option(
@@ -179,6 +187,11 @@ def audit(
         overrides["refs"] = {"texto_completo": True}
     if sem_cache:
         overrides["sem_cache"] = True
+    if referencia:
+        if referencia.lower() not in ("brasil", "mundo"):
+            _err("--referencia deve ser brasil ou mundo")
+            raise typer.Exit(2)
+        overrides["referencia"] = {"escopo": referencia.lower()}
     if online is not None:
         overrides["online"] = online
     if email:
@@ -222,6 +235,7 @@ def audit(
             "pdf": str(pdf) if pdf else None,
             "texto_completo": texto_completo,
             "sem_cache": sem_cache,
+            "referencia": referencia,
             "tipo": tipo,
             "ia_online": ia_online,
             "nivel": str(config.get("todo", "nivel", "a1")),
@@ -521,6 +535,93 @@ def cache_limpar(
     res = cache_mod.clear(cache_dir(), somente_vencidos=vencidos)
     what = "vencidas " if vencidos else ""
     typer.echo(f"apagadas {res['respostas']} resposta(s) {what}e {res['pdfs']} PDF(s) do cache")
+
+
+ref_app = typer.Typer(help="Referência empírica por área (quantis das obras mais citadas).")
+app.add_typer(ref_app, name="referencia")
+
+
+@ref_app.command("listar", help="Áreas disponíveis e referências instaladas.")
+def referencia_listar() -> None:
+    from errei.checkers.referencia import resumo_procedencia
+    from errei.referencia import areas, store
+
+    for a in areas.AREAS.values():
+        data = store.carregar(a.slug) or {}
+        esc = data.get("escopos", {})
+        inst = "; ".join(f"{k}: {resumo_procedencia(v)}" for k, v in esc.items()) or "—"
+        typer.echo(f"{a.slug:<16} {a.nome:<42} instalada: {inst}")
+    typer.echo(f"pasta: {store.pasta()}")
+
+
+@ref_app.command(
+    "construir",
+    help="Mede obras de acesso aberto no top 10% de citações da área (OpenAlex) e grava só "
+    "os quantis. Usa a rede.",
+)
+def referencia_construir(
+    area: Annotated[str, typer.Option("--area", help="Slug da área (errei referencia listar).")],
+    escopo: Annotated[
+        str, typer.Option("--escopo", help="brasil (autoria no Brasil) ou mundo.")
+    ] = "brasil",
+    n: Annotated[int, typer.Option("--n", help="Tamanho da amostra.")] = 300,
+    anos: Annotated[str, typer.Option("--anos", help="Intervalo de anos.")] = "2015-2023",
+    seed: Annotated[int, typer.Option("--seed", help="Semente da amostra.")] = 42,
+    sem_texto: Annotated[
+        bool, typer.Option("--sem-texto", help="Não baixa PDFs (só metadados e resumos).")
+    ] = False,
+    sem_modelo: Annotated[
+        bool, typer.Option("--sem-modelo", help="Papéis do resumo por palavras-chave.")
+    ] = False,
+    email: Annotated[
+        str | None, typer.Option("--email", help="E-mail para o polite pool do OpenAlex.")
+    ] = None,
+) -> None:
+    from errei import pipeline
+    from errei.referencia import areas, store
+    from errei.referencia.construir import ConstrucaoError, construir
+
+    a = areas.resolve(area)
+    if a is None:
+        _err(f"área desconhecida: {area} (opções: {', '.join(areas.AREAS)})")
+        raise typer.Exit(2)
+    if escopo not in ("brasil", "mundo"):
+        _err("--escopo deve ser brasil ou mundo")
+        raise typer.Exit(2)
+    config = Config.load(Path(), {"email": email} if email else {}, use_user_config=True)
+    try:
+        http = pipeline.make_http(config)
+    except ModuleNotFoundError as exc:
+        _err("requer o extra 'online': pip install 'errei[online,plagio]'")
+        raise typer.Exit(2) from exc
+
+    def show(msg: str) -> None:
+        typer.echo(f"\r{msg[:78]:<78}", nl=False, err=True)
+
+    try:
+        res = construir(
+            http,
+            a,
+            escopo,
+            n=n,
+            anos=anos,
+            seed=seed,
+            texto_completo=not sem_texto,
+            usar_modelo=not sem_modelo,
+            progress=show,
+        )
+    except ConstrucaoError as exc:
+        typer.echo("", err=True)
+        _err(str(exc))
+        raise typer.Exit(2) from exc
+    typer.echo("", err=True)
+    f = store.salvar(a.slug, escopo, res, a.nome)
+    p = res["procedencia"]
+    typer.echo(
+        f"referência {a.slug} ({escopo}) gravada em {f}: {p['amostra']['n']} obras de "
+        f"{p['obras_na_populacao']}, {p['com_texto_completo']} com texto completo, "
+        f"{http.requests_made} requisições"
+    )
 
 
 @app.callback(invoke_without_command=True)

@@ -41,7 +41,19 @@ def make_http(config: Config) -> Any:
     from errei.net.client import HttpClient  # importa httpx só quando online
 
     return HttpClient(
-        cache_dir=cache_dir(), email=config.email, refresh=bool(config.data.get("sem_cache"))
+        cache_dir=cache_dir(),
+        email=config.email,
+        refresh=bool(config.data.get("sem_cache")),
+        openalex_key=openalex_key(config),
+    )
+
+
+def openalex_key(config: Config) -> str:
+    """``OPENALEX_API_KEY`` ou ``[openalex] api_key`` no config do usuário (nunca do artigo)."""
+    import os
+
+    return os.environ.get("OPENALEX_API_KEY") or str(
+        config.trusted_get("openalex", "api_key", "") or ""
     )
 
 

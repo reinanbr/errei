@@ -220,6 +220,41 @@ paths = ["apendices/*.tex"]
 Termos técnicos vão em `.errei-dict.txt` (um por linha), que vale para ortografia e
 anglicismos.
 
+## Referência empírica por área
+
+As metas da lista de afazeres são genéricas. Para comparar o trabalho com **como escrevem
+os trabalhos de maior impacto da sua área**, construa uma referência (usa a rede, uma vez)
+e use-a offline em todas as auditorias:
+
+```bash
+errei referencia listar                                         # áreas e referências instaladas
+errei referencia construir --area educacao --escopo brasil      # ~300 obras, alguns minutos
+errei . --area educacao --referencia brasil                     # compara (offline)
+```
+
+- **Seleção:** artigos de acesso aberto no **top 10% de citações normalizadas** por ano e
+  subárea no OpenAlex (`--anos 2015-2023`), na área escolhida; com `--escopo brasil`, só os
+  que têm instituição brasileira na autoria. Amostra aleatória reprodutível (`--n`,
+  `--seed`).
+- **Medidas por obra:** nº de referências (no OpenAlex e contadas no PDF), % dos 5 anos
+  anteriores, % de periódicos, % com DOI, idade mediana das referências, extensão, resumo,
+  frase média, Flesch, MATTR, conectivos, passiva, citações por 1000 palavras, declarações
+  (dados, conflito, CRediT, financiamento, ética) e papéis retóricos do resumo.
+- **O que é gravado:** só quantis (p10, p25, p50, p75, p90) ou frequências, por idioma, com
+  a procedência (filtro, data, n, licenças dos textos) em
+  `~/.local/share/errei/referencias/<area>.json`. Os PDFs são lidos em memória e
+  descartados; nenhum texto ou título é guardado.
+- **No relatório:** cada dimensão aparece como "seu valor × p10–p90 e mediana (n=…)", sem
+  nota única. Fora de p10–p90 vira sugestão `REF-DIM-001`; amostra pequena (n < 30) vira
+  `REF-AREA-002`.
+
+Áreas: `educacao`, `saude-coletiva`, `computacao`, `psicologia`, `administracao`. O
+`--area` aceita o slug ou o nome CAPES (`"EDUCAÇÃO"`), o mesmo usado no Qualis.
+
+O OpenAlex limita o uso diário sem chave (orçamento compartilhado por IP). Para ter o seu,
+crie uma chave gratuita e use `OPENALEX_API_KEY` ou `[openalex] api_key` em
+`~/.config/errei/config.toml`. A chave vai em cabeçalho e nunca é gravada no cache.
+
 ## Cache das consultas online
 
 Com `--online`, as respostas das bases (Crossref, OpenAlex, Semantic Scholar, arXiv, Open

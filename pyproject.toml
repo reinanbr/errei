@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "errei"
-version = "0.5.1"
+version = "0.6.0"
 description = "Auditor de artigos científicos em LaTeX (pt-BR): escrita, ABNT, referências, similaridade, indícios de IA e prontidão para periódicos."
 readme = "README.md"
 license = "MIT"
@@ -58,6 +58,7 @@ ia = "errei.checkers.ia:IaChecker"
 periodico = "errei.checkers.periodico:PeriodicoChecker"
 completude = "errei.checkers.completude:CompletudeChecker"
 nacionais = "errei.checkers.nacionais:NacionaisChecker"
+referencia = "errei.checkers.referencia:ReferenciaChecker"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/errei"]

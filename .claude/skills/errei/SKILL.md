@@ -28,6 +28,10 @@ Camada fina sobre a CLI `errei`. Não reimplemente verificações: rode a CLI e 
    - Com `--online`, o JSON traz `references[]`: obra encontrada (título, autores, ano,
      resumo, link) e, em `uses[]`, cada frase do artigo que a cita com `verdict`
      (`sustenta` / `contradiz` / `neutro`) e o trecho da fonte (`evidence`).
+   - Se houver referência instalada (`errei referencia listar`), use `--area <slug>
+     --referencia brasil|mundo`: o JSON traz o grupo `referencia` em `metrics[]` (valor do
+     trabalho × p10–p90 com n). **Não** rode `errei referencia construir` sem pedir: usa a
+     rede e o orçamento do OpenAlex.
    - `--tipo artigo|monografia|tcc|dissertacao|tese` fixa o tipo usado pela completude
      (padrão: detectar).
    - **Não** adicione `--ia-online` por conta própria: envia frases do trabalho ao Google
@@ -42,6 +46,8 @@ Camada fina sobre a CLI `errei`. Não reimplemente verificações: rode a CLI e 
    - **Erros** primeiro, como `arquivo:linha — mensagem → sugestão` (no máximo ~15; diga
      quantos ficaram de fora);
    - **Avisos** agrupados por verificador, com os mais relevantes;
+   - **referência da área** (se usada): as dimensões fora de p10–p90 (`REF-DIM-001`) com o
+     n e a data da referência; diga que é contraste com obras de alto impacto, não regra;
    - métricas-chave: legibilidade, índice de prontidão (com seus componentes) e, se houver,
      estrato Qualis **do periódico** com a data do CSV;
    - similaridade e IA sempre como **indícios**, com a confiança e os motivos do JSON;

@@ -45,6 +45,13 @@ BY_CHECKER = {
     "Open Library, Google Books), mas a afinidade com a afirmação é estimada pelo resumo ou pela "
     "descrição, não pelo texto completo. Leia antes de citar. A obra estrangeira pode "
     "continuar sendo a fonte mais adequada.",
+    "referencia": "A referência por área compara o manuscrito com quantis de uma amostra "
+    "de obras de acesso aberto no top 10% de citações normalizadas do OpenAlex (a "
+    "procedência, o n e a data aparecem na tabela). Citação mede impacto, não qualidade; a "
+    "classificação de área do OpenAlex é automática; o nº de referências da amostra só "
+    "conta as obras que o OpenAlex localizou, e as medidas de texto vêm de PDFs (com "
+    "legendas e tabelas), enquanto as do manuscrito vêm do LaTeX. Estar fora da faixa usual "
+    "não é erro, e estar dentro não garante aceite.",
 }
 
 IA_ONLINE = (

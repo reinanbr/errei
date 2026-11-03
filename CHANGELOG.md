@@ -3,6 +3,19 @@
 Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/); versões
 seguem [SemVer](https://semver.org/lang/pt-BR/).
 
+## [0.6.0] - 2026-11-03
+
+### Adicionado
+
+- Referência empírica por área (Fase 1): `errei referencia construir --area <slug> --escopo
+  brasil|mundo` mede obras de acesso aberto no top 10% de citações normalizadas do OpenAlex
+  e grava só quantis/frequências com procedência; `errei referencia listar`.
+- `--referencia brasil|mundo` (com `--area`): verificador `referencia` compara cada dimensão
+  do trabalho com p10–p90 da referência (`REF-DIM-001`, `REF-AREA-001..003`). Não muda nada
+  sem a flag.
+- Chave opcional do OpenAlex (`OPENALEX_API_KEY` ou `[openalex] api_key`), enviada em
+  cabeçalho e fora do cache.
+
 ## [0.5.1] - 2026-11-02
 
 ### Adicionado
