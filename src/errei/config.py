@@ -54,6 +54,13 @@ DEFAULTS: dict[str, Any] = {
     "completude": {"tipo": "auto"},
     "todo": {"nivel": "a1"},
     "nacionais": {"enabled": True, "max_refs": 8, "max_sugestoes": 3},
+    "literatura": {
+        "enabled": True,
+        "max_fontes": 3,
+        "max_afirmacoes": 15,
+        "ano_min": 0,
+        "idiomas": [],
+    },
     # IA online (Gemini): só vale no config do USUÁRIO ou em flags, nunca no .errei.toml
     "ia_online": {"enabled": False, "modelo": "", "api_key": ""},
 }
@@ -110,6 +117,12 @@ nivel = "a1"       # lista de afazeres: tcc | mestrado | doutorado | a1 (Scopus 
 [nacionais]        # com --online: obras brasileiras para citações estrangeiras
 enabled = true
 max_refs = 8
+
+[literatura]       # com --online: fontes que sustentam cada afirmação (pt e en)
+max_fontes = 3     # --lit-max
+max_afirmacoes = 15
+ano_min = 0        # --lit-ano-min (0 = sem limite)
+idiomas = []       # --lit-idioma pt,en (vazio = todos)
 
 # [ia_online] (Gemini) é ignorado aqui por segurança: configure em
 # ~/.config/errei/config.toml ou use --ia-online com GEMINI_API_KEY no ambiente.

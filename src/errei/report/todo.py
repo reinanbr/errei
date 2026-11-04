@@ -247,6 +247,7 @@ AREA = {
     "latex": "Estrutura LaTeX",
     "refs": "Referências e citações",
     "nacionais": "Referências e citações",
+    "literatura": "Referências e citações",
     "abnt": "Normas ABNT",
     "ptbr": "Língua portuguesa",
     "escrita": "Escrita e clareza",

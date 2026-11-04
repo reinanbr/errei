@@ -45,6 +45,13 @@ BY_CHECKER = {
     "Open Library, Google Books), mas a afinidade com a afirmação é estimada pelo resumo ou pela "
     "descrição, não pelo texto completo. Leia antes de citar. A obra estrangeira pode "
     "continuar sendo a fonte mais adequada.",
+    "literatura": "As fontes sugeridas por afirmação foram localizadas e confirmadas em bases "
+    "abertas (OpenAlex, Crossref, Semantic Scholar, arXiv), mas 'sustenta' é a estimativa de "
+    "um modelo local (errei-cita) sobre o resumo e, com --texto-completo, sobre trechos de PDFs "
+    "de licença aberta: é indicador, não veredito. Os trechos são mostrados no idioma "
+    "original, com no máximo 300 caracteres e a fonte; leia a obra antes de citar. A busca "
+    "não cobre bases fechadas, e a ausência de fonte não significa que a afirmação esteja "
+    "errada.",
     "referencia": "A referência por área compara o manuscrito com quantis de uma amostra "
     "de obras de acesso aberto no top 10% de citações normalizadas do OpenAlex (a "
     "procedência, o n e a data aparecem na tabela). Citação mede impacto, não qualidade; a "

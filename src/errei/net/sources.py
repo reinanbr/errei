@@ -137,7 +137,9 @@ def _openalex_item(it: dict[str, Any]) -> Candidate:
             full.append(name)
     best = it.get("best_oa_location") or {}
     pdf_url = str(best.get("pdf_url") or (it.get("open_access") or {}).get("oa_url") or "")
-    src = ((it.get("primary_location") or {}).get("source") or {}).get("display_name") or ""
+    src_obj = (it.get("primary_location") or {}).get("source") or {}
+    src = src_obj.get("display_name") or ""
+    pct = it.get("citation_normalized_percentile") or {}
     doi = str(it.get("doi") or "").replace("https://doi.org/", "")
     return Candidate(
         "OpenAlex",
@@ -149,7 +151,15 @@ def _openalex_item(it: dict[str, Any]) -> Candidate:
         f"https://doi.org/{doi}" if doi else str(it.get("id") or ""),
         bool(it.get("is_retracted")) if "is_retracted" in it else None,
         _openalex_abstract(it.get("abstract_inverted_index")),
-        {"authors_full": full, "pdf_url": pdf_url},
+        {
+            "authors_full": full,
+            "pdf_url": pdf_url,
+            "lingua": str(it.get("language") or ""),
+            "oa_licenca": str(best.get("license") or ""),
+            "issn": [str(x) for x in (src_obj.get("issn") or []) if x],
+            "percentil": float(pct.get("value") or 0.0),
+            "openalex_id": str(it.get("id") or ""),
+        },
     )
 
 
@@ -172,6 +182,28 @@ def openalex_search(http: Any, query: str, rows: int = 5) -> list[Candidate] | N
     return [_openalex_item(it) for it in res[1].get("results") or []]
 
 
+def openalex_search_lit(
+    http: Any,
+    query: str,
+    rows: int = 8,
+    *,
+    ano_min: int | None = None,
+    idiomas: tuple[str, ...] = (),
+) -> list[Candidate] | None:
+    """Busca de literatura sem restrição de país (verificador ``literatura``)."""
+    filt = ["type:article|review|preprint|book-chapter"]
+    if ano_min:
+        filt.append(f"from_publication_date:{int(ano_min)}-01-01")
+    if idiomas:
+        filt.append("language:" + "|".join(idiomas))
+    res = http.get_json(
+        f"{OPENALEX}/works", {"search": query[:300], "filter": ",".join(filt), "per-page": rows}
+    )
+    if res is None or res[1] is None:
+        return None
+    return [_openalex_item(it) for it in res[1].get("results") or []]
+
+
 def openalex_source_by_issn(http: Any, issn: str) -> dict[str, Any] | None:
     res = http.get_json(f"{OPENALEX}/sources", {"filter": f"issn:{issn}", "per-page": 1})
     if res is None or res[1] is None:
@@ -189,15 +221,17 @@ def openalex_source_search(http: Any, title: str) -> dict[str, Any] | None:
 
 
 # ------------------------------------------------------------------ Semantic Scholar
-def s2_search(http: Any, query: str, rows: int = 5) -> list[Candidate] | None:
-    res = http.get_json(
-        f"{S2}/paper/search",
-        {
-            "query": query[:300],
-            "limit": rows,
-            "fields": "title,year,authors,venue,externalIds,url,abstract",
-        },
-    )
+def s2_search(
+    http: Any, query: str, rows: int = 5, *, ano_min: int | None = None
+) -> list[Candidate] | None:
+    params: dict[str, Any] = {
+        "query": query[:300],
+        "limit": rows,
+        "fields": "title,year,authors,venue,externalIds,url,abstract",
+    }
+    if ano_min:
+        params["year"] = f"{int(ano_min)}-"
+    res = http.get_json(f"{S2}/paper/search", params)
     if res is None or res[1] is None:
         return None
     out = []
@@ -218,6 +252,7 @@ def s2_search(http: Any, query: str, rows: int = 5) -> list[Candidate] | None:
                 str(it.get("url") or ""),
                 None,
                 str(it.get("abstract") or ""),
+                {"arxiv": str(ext.get("ArXiv") or ""), "s2_id": str(it.get("paperId") or "")},
             )
         )
     return out

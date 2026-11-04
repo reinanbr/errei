@@ -35,6 +35,8 @@ pdf = ["reportlab>=4.0"]
 # modelo errei-cita (validação de atribuições); torch CPU: use
 # --extra-index-url https://download.pytorch.org/whl/cpu para evitar o build com CUDA
 modelo = ["torch>=2.1", "transformers>=4.40", "sentencepiece>=0.1.99"]
+# tradutor local pt->en (Helsinki-NLP/opus-mt-ROMANCE-en, Apache-2.0) para a consulta em inglês
+traducao = ["torch>=2.1", "transformers>=4.40", "sentencepiece>=0.1.99"]
 all = ["errei[online,ptbr,plagio,pdf]"]
 dev = [
     "pytest>=8",
@@ -59,6 +61,7 @@ periodico = "errei.checkers.periodico:PeriodicoChecker"
 completude = "errei.checkers.completude:CompletudeChecker"
 nacionais = "errei.checkers.nacionais:NacionaisChecker"
 referencia = "errei.checkers.referencia:ReferenciaChecker"
+literatura = "errei.checkers.literatura:LiteraturaChecker"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/errei"]
@@ -91,7 +94,7 @@ mypy_path = "src"
 files = ["src/errei"]
 
 [[tool.mypy.overrides]]
-module = ["tomli", "reportlab.*", "torch.*", "transformers.*", "pylatexenc.*", "language_tool_python.*", "spellchecker.*", "pypdf.*"]
+module = ["tomli", "reportlab.*", "torch.*", "transformers.*", "sentencepiece.*", "pylatexenc.*", "language_tool_python.*", "spellchecker.*", "pypdf.*"]
 ignore_missing_imports = true
 
 [tool.hatch.build.targets.sdist]

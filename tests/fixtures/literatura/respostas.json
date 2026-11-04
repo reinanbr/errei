@@ -1,0 +1,56 @@
+{
+  "_sobre": "Respostas de API gravadas (formato real do OpenAlex, Crossref e Semantic Scholar, conteúdo reduzido) para testar o verificador literatura sem rede.",
+  "openalex_busca": {
+    "neurais": [
+      {
+        "id": "https://openalex.org/W100",
+        "title": "Neural networks shorten diagnostic time in emergency departments",
+        "publication_year": 2022,
+        "type": "article",
+        "language": "en",
+        "doi": "https://doi.org/10.1000/nn.2022",
+        "authorships": [
+          {"author": {"display_name": "Maria Smith"}},
+          {"author": {"display_name": "John Doe"}},
+          {"author": {"display_name": "Ana Lee"}}
+        ],
+        "primary_location": {"source": {"display_name": "Journal of Medical Systems", "issn": ["0148-5598"]}},
+        "best_oa_location": {"license": "cc-by", "pdf_url": ""},
+        "citation_normalized_percentile": {"value": 0.93},
+        "abstract_inverted_index": {"We": [0], "evaluated": [1], "triage": [2], "software.": [3], "The": [4], "use": [5], "of": [6], "neural": [7], "networks": [8], "reduces": [9], "diagnostic": [10], "time": [11], "in": [12], "hospitals": [13], "by": [14], "30": [15], "percent.": [16]}
+      }
+    ],
+    "telemedicina": [
+      {
+        "id": "https://openalex.org/W200",
+        "title": "Telemedicina em áreas rurais: custos de implantação",
+        "publication_year": 2020,
+        "type": "article",
+        "language": "pt",
+        "doi": "https://doi.org/10.1590/tele.2020",
+        "authorships": [{"author": {"display_name": "Carlos Souza"}}],
+        "primary_location": {"source": {"display_name": "Revista de Saúde Pública", "issn": ["0034-8910"]}},
+        "citation_normalized_percentile": {"value": 0.4},
+        "abstract_inverted_index": {"Estimamos": [0], "os": [1], "custos": [2], "de": [3], "implantação": [4], "da": [5], "telemedicina": [6], "em": [7], "áreas": [8], "rurais": [9], "do": [10], "Nordeste.": [11]}
+      }
+    ]
+  },
+  "s2_busca": {
+    "gamificação": [
+      {
+        "paperId": "s2fake",
+        "title": "Gamification improves engagement of engineering students",
+        "year": 2021,
+        "authors": [{"name": "Ghost Author"}],
+        "venue": "Imaginary Journal",
+        "externalIds": {"DOI": "10.9999/naoexiste"},
+        "url": "https://www.semanticscholar.org/paper/s2fake",
+        "abstract": "Gamification improves engagement of engineering students."
+      }
+    ]
+  },
+  "crossref_doi": {
+    "10.1000/nn.2022": {"DOI": "10.1000/nn.2022", "title": ["Neural networks shorten diagnostic time in emergency departments"], "author": [{"family": "Smith"}], "issued": {"date-parts": [[2022]]}, "container-title": ["Journal of Medical Systems"]},
+    "10.1590/tele.2020": {"DOI": "10.1590/tele.2020", "title": ["Telemedicina em áreas rurais: custos de implantação"], "author": [{"family": "Souza"}], "issued": {"date-parts": [[2020]]}}
+  }
+}
