@@ -137,6 +137,25 @@ class Classificador:
             "evid_c": janelas[i_c],
         }
 
+    def julgar_trechos(
+        self, afirmacao: str, trechos: list[tuple[str, int | None]]
+    ) -> tuple[Julgamento, int | None]:
+        """Julga contra trechos já recortados (resumo e/ou texto completo, com página).
+
+        Devolve o julgamento e a página do trecho de evidência (``None`` = resumo/sem página).
+        """
+        if not trechos:
+            return Julgamento("neutro", 0.0, 0.0, ""), None
+        ps = self.probs([(afirmacao, t) for t, _ in trechos])
+        i_s = max(range(len(ps)), key=lambda i: ps[i]["sustenta"])
+        i_c = max(range(len(ps)), key=lambda i: ps[i]["contradiz"])
+        s, c = ps[i_s]["sustenta"], ps[i_c]["contradiz"]
+        if c >= self.limiares["contradiz"] and c >= s:
+            return Julgamento("contradiz", s, c, trechos[i_c][0]), trechos[i_c][1]
+        if s >= self.limiares["sustenta"]:
+            return Julgamento("sustenta", s, c, trechos[i_s][0]), trechos[i_s][1]
+        return Julgamento("neutro", s, c, trechos[i_s][0]), trechos[i_s][1]
+
     def julgar(self, afirmacao: str, resumo: str) -> Julgamento:
         r = self.julgar_resumo(afirmacao, frases(resumo))
         s, c = r["sustenta"], r["contradiz"]
@@ -155,3 +174,11 @@ def carregar() -> Classificador:
             _cache[d] = Classificador(d)
         clf: Classificador = _cache[d]
         return clf
+
+
+def janelas(texto: str) -> list[tuple[str, int | None]]:
+    """Frases e janelas de 2 frases do resumo, sem página."""
+    fr = frases(texto) if texto else []
+    out: list[tuple[str, int | None]] = [(f, None) for f in fr]
+    out += [(fr[i] + " " + fr[i + 1], None) for i in range(len(fr) - 1)]
+    return out

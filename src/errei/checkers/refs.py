@@ -721,18 +721,29 @@ class RefsChecker(BaseChecker):
         if reason is not None and contexts and cand is not None and cand.abstract:
             ctx.shared.setdefault("_modelo_aviso", reason)
         fulltext: list[str] | None = None
-        if (
-            ctx.config.get("refs", "texto_completo", False)
-            and cand is not None
-            and any(c.quote for c in contexts)
-        ):
-            fulltext = _fulltext_pages(ctx, str(cand.extra.get("pdf_url") or ""))
+        tc = None
+        if ctx.config.get("refs", "texto_completo", False) and cand is not None and contexts:
+            from errei.net.textocompleto import texto_de
+
+            ctx.progress(f"procurando o texto completo de {e.key}")
+            tc = texto_de(ctx, cand)
+            if tc is not None:
+                ref["texto_completo"] = tc.descricao()
+                if tc.paginado:
+                    fulltext = tc.paginas
+            else:
+                ref["texto_completo"] = "não localizado em fontes de acesso livre"
+        if tc is not None and clf is None and reason is None and contexts:
+            try:  # sem resumo, mas com texto completo: o modelo ainda pode julgar
+                clf = citecheck.carregar()
+            except Exception as exc:
+                reason = f"falha ao carregar o modelo: {exc}"
         for c in contexts:
             use_rec: dict[str, Any] = {"location": c.location, "claim": c.claim}
             kw: dict[str, Any] = {"src": c.source, "start": c.src_offset}
             if cand is None:
                 use_rec["verdict"] = "obra não localizada"
-            elif not cand.abstract:
+            elif not cand.abstract and tc is None:
                 use_rec["verdict"] = "sem resumo"
                 out.append(
                     self.finding(
@@ -748,7 +759,22 @@ class RefsChecker(BaseChecker):
             elif len(c.claim.split()) < 4:
                 use_rec["verdict"] = "frase curta demais"
             else:
-                j = clf.julgar(c.claim, cand.abstract)
+                pagina: int | None = None
+                base_txt = "sobre o resumo"
+                if tc is not None:
+                    from errei.net.textocompleto import trechos as trechos_tc
+
+                    lista = citecheck.janelas(cand.abstract) + trechos_tc(tc, c.claim)
+                    j, pagina = clf.julgar_trechos(c.claim, lista)
+                    no_texto = j.evidencia not in cand.abstract
+                    base_txt = (
+                        f"sobre o texto completo ({tc.origem})" if no_texto else "sobre o resumo"
+                    )
+                    if not no_texto:
+                        pagina = None
+                else:
+                    j = clf.julgar(c.claim, cand.abstract)
+                use_rec.update(pagina=pagina)
                 use_rec.update(
                     verdict=j.veredito,
                     score=round(j.score, 3),
@@ -756,30 +782,40 @@ class RefsChecker(BaseChecker):
                     p_sustenta=round(j.sustenta, 3),
                     p_contradiz=round(j.contradiz, 3),
                 )
+                fonte_txt = "o resumo" if tc is None else "o resumo e o texto completo"
+                if tc is not None and "texto completo" in base_txt:
+                    fonte_txt = "o texto completo"
                 code, msg = {
                     "sustenta": (
                         "REFS-ATRIB-001",
-                        f"'{e.key}': afirmação compatível com o resumo da fonte",
+                        f"'{e.key}': afirmação compatível com {fonte_txt} da fonte",
                     ),
                     "contradiz": (
                         "REFS-ATRIB-002",
-                        f"'{e.key}': o resumo da fonte parece contradizer a afirmação",
+                        f"'{e.key}': {fonte_txt} da fonte parece contradizer a afirmação",
                     ),
                     "neutro": (
                         "REFS-ATRIB-003",
-                        f"'{e.key}': o resumo da fonte não permite confirmar a afirmação",
+                        f"'{e.key}': {fonte_txt} da fonte não permite confirmar a afirmação",
                     ),
                 }[j.veredito]
-                ev = (
-                    f"trecho da fonte: “{j.evidencia[:300]}”",
+                onde = f" (p. {pagina})" if pagina else ""
+                ev: tuple[str, ...] = (
+                    f"trecho da fonte: “{_trecho300(j.evidencia)}”{onde}",
                     f"P(sustenta) {j.sustenta:.0%} · P(contradiz) {j.contradiz:.0%} "
-                    f"(modelo {citecheck.MODEL_NAME}, sobre o resumo)",
+                    f"(modelo {citecheck.model_dir().name}, {base_txt})",
                 )
+                if tc is not None:
+                    ev += (tc.descricao(),)
                 sugg = None
                 if j.veredito == "contradiz":
                     sugg = "releia a fonte; corrija a afirmação ou a referência"
                 elif j.veredito == "neutro":
-                    sugg = "confira no texto completo se a obra afirma isso"
+                    sugg = (
+                        "confira no texto completo se a obra afirma isso"
+                        if tc is None
+                        else "a obra parece não afirmar isso; confira ou troque a referência"
+                    )
                 out.append(
                     self.finding(
                         code,
@@ -788,7 +824,7 @@ class RefsChecker(BaseChecker):
                         confidence=round(j.score, 2),
                         evidence=ev,
                         suggestion=sugg,
-                        links=(cand.url,) if cand.url else (),
+                        links=tuple(x for x in (cand.url, tc.url if tc else "") if x),
                         **kw,
                     )
                 )
@@ -935,6 +971,11 @@ def _close_key(key: str, keys: list[str]) -> str | None:
 
     match = difflib.get_close_matches(key, keys, n=1, cutoff=0.7)
     return f"você quis dizer '{match[0]}'?" if match else None
+
+
+def _trecho300(texto: str) -> str:
+    flat = " ".join(texto.split())
+    return flat if len(flat) <= 300 else flat[:299] + "…"
 
 
 def _fulltext_pages(ctx: RunContext, url: str) -> list[str] | None:

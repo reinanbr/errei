@@ -35,7 +35,6 @@ if TYPE_CHECKING:
 
 AVISO = "indicador, não veredito. Leia a fonte antes de citar."
 MAX_TRECHO = 300
-LICENCAS_ABERTAS = frozenset({"cc-by", "cc0", "cc-by-sa", "public-domain", "pd"})
 REVIEW_TITLES = re.compile(
     r"introdu|trabalhos relacionados|referencial|revis[aã]o|fundamenta|"
     r"estado da arte|related work|background",
@@ -506,19 +505,15 @@ class LiteraturaChecker(BaseChecker):
         fr = frases(c.abstract) if c.abstract else []
         out = [Trecho(f, None) for f in fr]
         out += [Trecho(fr[i] + " " + fr[i + 1], None) for i in range(len(fr) - 1)]
-        lic = str(c.extra.get("oa_licenca") or "").lower()
-        url = str(c.extra.get("pdf_url") or "")
-        if completo and url and lic in LICENCAS_ABERTAS:
-            from errei.checkers.refs import _fulltext_pages
+        if completo:
+            from errei.net.textocompleto import texto_de, trechos
 
-            pages = _fulltext_pages(ctx, url) or []
-            pdf: list[Trecho] = []
-            for n, page in enumerate(pages, 1):
-                pdf += [Trecho(f, n) for f in frases(page) if 40 <= len(f) <= 600]
-            # CPU: só os trechos com mais termos da afirmação
-            pdf.sort(key=lambda t: lexical(termos, t.texto), reverse=True)
-            out += pdf[:60]
-            c.extra["texto_completo"] = bool(pages)
+            tc = texto_de(ctx, c)
+            if tc is not None:
+                # CPU: só os trechos com mais termos da afirmação
+                out += [Trecho(t, pg) for t, pg in trechos(tc, termos)]
+                c.extra["texto_completo"] = tc.descricao()
+                c.extra["texto_url"] = tc.url
         return out
 
     def _avaliar(
@@ -575,7 +570,7 @@ class LiteraturaChecker(BaseChecker):
                 excerpt=a.texto,
                 confidence=round(v.p_sustenta, 2),
                 evidence=evid,
-                links=tuple(x for x in (_link(c),) if x),
+                links=tuple(x for x in (_link(c), str(c.extra.get("texto_url") or "")) if x),
                 suggestion="leia a fonte; se ela de fato sustentar a afirmação, cite-a com "
                 "suas palavras",
             )

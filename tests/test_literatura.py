@@ -98,6 +98,8 @@ def router(respx_mock: respx.MockRouter, calls: list[httpx.Request]) -> None:
     respx_mock.get(url__startswith="https://api.openalex.org/").mock(side_effect=openalex)
     respx_mock.get(url__startswith="https://api.semanticscholar.org/").mock(side_effect=s2)
     respx_mock.get(url__startswith="https://api.crossref.org/").mock(side_effect=crossref)
+    # demais fontes de texto completo (Europe PMC, página do DOI, robots.txt): nada
+    respx_mock.route().mock(return_value=httpx.Response(404, text=""))
 
 
 def projeto(tmp: Path) -> Path:
@@ -369,8 +371,8 @@ def _tele_com_pdf(monkeypatch: pytest.MonkeyPatch, licenca: str) -> None:
 def test_texto_completo_aberto_sustenta_com_pagina(
     tmp_path: Path, respx_mock: respx.MockRouter, monkeypatch: pytest.MonkeyPatch, licenca: str
 ) -> None:
-    router(respx_mock, [])
     pdf = respx_mock.get(PDF_URL).mock(return_value=httpx.Response(200, content=PDF))
+    router(respx_mock, [])
     _tele_com_pdf(monkeypatch, licenca)
     root = projeto(tmp_path)
     sem = rodar(root)  # sem --texto-completo: só o resumo (pt) -> relacionada
@@ -390,17 +392,32 @@ def test_texto_completo_aberto_sustenta_com_pagina(
     assert any("Souza" in f.message for f in by_code(rep.findings, "LIT-LANG-001"))
 
 
-@pytest.mark.parametrize("licenca", ["", "other-oa", "cc-by-nc", "publisher-specific-oa"])
-def test_texto_completo_sem_licenca_aberta_nao_baixa(
+@pytest.mark.parametrize("licenca", ["", "other-oa", "publisher-specific-oa"])
+def test_texto_completo_de_acesso_livre_sem_licenca_aberta(
     tmp_path: Path, respx_mock: respx.MockRouter, monkeypatch: pytest.MonkeyPatch, licenca: str
 ) -> None:
-    router(respx_mock, [])
+    """Acesso livre sem licença aberta também vale (trecho curto, com a fonte)."""
     pdf = respx_mock.get(PDF_URL).mock(return_value=httpx.Response(200, content=PDF))
+    router(respx_mock, [])
     _tele_com_pdf(monkeypatch, licenca)
     rep = rodar(projeto(tmp_path), refs={"texto_completo": True})
-    assert pdf.call_count == 0  # PDF de licença fechada nunca é baixado
+    assert pdf.call_count == 1
+    tele = [f for f in by_code(rep.findings, "LIT-SUG-001") if "Souza" in " ".join(f.evidence)]
+    assert len(tele) == 1 and PDF_URL in tele[0].links
+
+
+def test_robots_txt_proibe_entao_nao_baixa(
+    tmp_path: Path, respx_mock: respx.MockRouter, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    pdf = respx_mock.get(PDF_URL).mock(return_value=httpx.Response(200, content=PDF))
+    respx_mock.get("https://oa.example.org/robots.txt").mock(
+        return_value=httpx.Response(200, text="User-agent: *\nDisallow: /\n")
+    )
+    router(respx_mock, [])
+    _tele_com_pdf(monkeypatch, "cc-by")
+    rep = rodar(projeto(tmp_path), refs={"texto_completo": True})
+    assert pdf.call_count == 0
     assert not any("Souza" in " ".join(f.evidence) for f in by_code(rep.findings, "LIT-SUG-001"))
-    assert any("Souza" in " ".join(f.evidence) for f in by_code(rep.findings, "LIT-REL-001"))
 
 
 def test_trecho_limitado_a_300_caracteres(

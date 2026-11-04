@@ -28,6 +28,10 @@ HOST_INTERVAL = {
     "api.openalex.org": 0.2,
     "api.semanticscholar.org": 1.1,
     "export.arxiv.org": 3.0,
+    "arxiv.org": 15.0,  # Crawl-delay do robots.txt
+    "api.unpaywall.org": 0.2,
+    "www.ebi.ac.uk": 0.2,
+    "api.core.ac.uk": 1.0,
     "generativelanguage.googleapis.com": 1.0,
     "www.googleapis.com": 1.5,
     "openlibrary.org": 1.0,
@@ -41,7 +45,8 @@ class RateLimiter:
     def __init__(
         self, intervals: dict[str, float] | None = None, default: float = DEFAULT_INTERVAL
     ) -> None:
-        self.intervals = intervals if intervals is not None else HOST_INTERVAL
+        # cópia: o Crawl-delay de um robots.txt ajusta só este cliente
+        self.intervals = dict(intervals if intervals is not None else HOST_INTERVAL)
         self.default = default
         self._next: dict[str, float] = defaultdict(float)
         self._lock = threading.Lock()
@@ -98,6 +103,13 @@ class HttpClient:
         self._lock = threading.Lock()
         self.requests_made = 0
         self.hosts: set[str] = set()  # hosts consultados (base do relatório)
+        self.last_url: dict[str, str] = {}
+
+    def respeitar_crawl_delay(self, host: str, segundos: float) -> None:
+        """Aplica o ``Crawl-delay`` do robots.txt do site (limitado a 30 s)."""
+        with self._lock:
+            atual = self.limiter.intervals.get(host, self.limiter.default)
+            self.limiter.intervals[host] = max(atual, min(float(segundos), 30.0))
 
     # ------------------------------------------------------------------
     def _key(self, url: str, params: dict[str, Any] | None) -> str:
@@ -151,6 +163,8 @@ class HttpClient:
             body = resp.text[:MAX_BODY]
             with self._lock:
                 self._fail[host] = 0
+                if str(resp.url) != url:
+                    self.last_url[url] = str(resp.url)  # destino final (redirecionamentos)
             if resp.status_code in (200, 404):
                 self.cache.put(key, resp.status_code, body)
             return resp.status_code, body

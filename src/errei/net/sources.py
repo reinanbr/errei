@@ -159,6 +159,12 @@ def _openalex_item(it: dict[str, Any]) -> Candidate:
             "issn": [str(x) for x in (src_obj.get("issn") or []) if x],
             "percentil": float(pct.get("value") or 0.0),
             "openalex_id": str(it.get("id") or ""),
+            # todas as cópias de acesso livre (url do PDF, licença), na ordem do OpenAlex
+            "oa_locais": [
+                (str(loc.get("pdf_url")), str(loc.get("license") or ""))
+                for loc in it.get("oa_locations") or []
+                if loc.get("pdf_url")
+            ],
         },
     )
 
@@ -306,6 +312,8 @@ def enrich(http: Any, cand: Candidate) -> Candidate:
                 cand.extra["abstract_source"] = other.source
             if not cand.extra.get("pdf_url") and other.extra.get("pdf_url"):
                 cand.extra["pdf_url"] = other.extra["pdf_url"]
+            if not cand.extra.get("oa_locais") and other.extra.get("oa_locais"):
+                cand.extra["oa_locais"] = other.extra["oa_locais"]
             if not cand.extra.get("authors_full") and other.extra.get("authors_full"):
                 cand.extra["authors_full"] = other.extra["authors_full"]
     if cand.abstract and "abstract_source" not in cand.extra:

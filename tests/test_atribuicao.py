@@ -44,6 +44,13 @@ class FakeClf:
             )
         return Julgamento("neutro", 0.2, 0.1, "Adverse events were rare.")
 
+    def julgar_trechos(
+        self, afirmacao: str, trechos: list[tuple[str, int | None]]
+    ) -> tuple[Julgamento, int | None]:
+        j = self.julgar(afirmacao, " ".join(t for t, _ in trechos))
+        pag = next((p for t, p in trechos if j.evidencia[:30] in t), None)
+        return j, pag
+
 
 BODY = (
     "A aspirina reduz o câncer colorretal em portadores de síndrome de Lynch \\cite{burn}.\n\n"
