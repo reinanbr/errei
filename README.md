@@ -63,7 +63,7 @@ errei . --pdf relatorio.pdf          # mostra na tela E grava o relatório em PD
 errei . --resumo                     # na tela, só o nível de qualidade, problemas e melhorias
 errei . --todo afazeres.md --nivel mestrado  # lista de tarefas para chegar ao nível
 errei . --format pdf --out rel.pdf   # PDF como saída principal (resumo na tela)
-errei . --online --texto-completo    # baixa PDFs abertos das obras para conferir citações diretas
+errei . --online --texto-completo    # lê o texto completo (acesso livre) para validar as citações
 errei modelo info                    # estado e métricas do modelo de citações errei-cita
 errei init                           # cria .errei.toml comentado na pasta
 errei doctor                         # verifica dependências (java, LanguageTool, hunspell)
@@ -132,8 +132,31 @@ Com `--online`, para cada obra citada o errei:
    citação) é comparada com cada frase do resumo da fonte pelo modelo **errei-cita**, que
    indica se a fonte *sustenta* (`REFS-ATRIB-001`), *parece contradizer* (`REFS-ATRIB-002`)
    ou *não permite confirmar* (`REFS-ATRIB-003`) a afirmação, mostrando o trecho da fonte;
-4. com `--texto-completo`, **procura as citações diretas** (trechos entre aspas) no PDF aberto
-   da obra e confere a página indicada em `\cite[p.~N]{...}` (`REFS-QUOTE-*`).
+4. com `--texto-completo`, **procura o texto completo** da obra em fontes de acesso livre
+   (veja [Texto completo](#texto-completo)) e:
+   - julga a frase também contra o **corpo da obra**, não só contra o resumo, mostrando o
+     trecho e a página (`REFS-ATRIB-*`). Assim, "o resumo não permite confirmar" vira
+     "o texto sustenta (p. 7)" quando a obra de fato afirma aquilo;
+   - procura as **citações diretas** (trechos entre aspas) e confere a página indicada em
+     `\cite[p.~N]{...}` (`REFS-QUOTE-*`).
+
+### Texto completo
+
+Com `--online --texto-completo`, o errei tenta, nesta ordem, até conseguir um texto legível:
+
+1. todas as cópias de acesso livre listadas pelo OpenAlex (`oa_locations`);
+2. Unpaywall (requer `--email` ou `email` no config);
+3. Europe PMC / PubMed Central (XML do texto completo);
+4. arXiv;
+5. CORE, se houver `CORE_API_KEY` no ambiente ou `[core] api_key` no config do usuário;
+6. a página do DOI na editora, no SciELO ou no repositório: o link `citation_pdf_url`.
+
+Vale qualquer texto de **acesso livre**, com ou sem licença aberta (CC BY etc.). O relatório
+mostra no máximo 300 caracteres de cada trecho, sempre com a obra e o link, como citação.
+O errei **respeita o `robots.txt`** de cada site (inclusive o `Crawl-delay`), se identifica
+pelo User-Agent, obedece ao limite de requisições e **não contorna** bloqueios, captchas ou
+paywalls. Não usa sites que distribuem cópias sem autorização. Os PDFs ficam no cache por 90
+dias (`errei cache info`).
 
 Durante a verificação online o terminal mostra o andamento ("verificando referência 3/7
 online: lecun2015", "validando 2 citação(ões)…"). Ele não aparece quando a saída é
@@ -441,7 +464,7 @@ errei caminho/artigo --online --lit-max 2 --lit-ano-min 2015 --lit-idioma pt,en
 | `--lit-max N` | máximo de fontes por afirmação (padrão 3; `[literatura] max_fontes`) |
 | `--lit-ano-min AAAA` | só fontes publicadas a partir desse ano |
 | `--lit-idioma pt,en` | só fontes nesses idiomas (ISO 639-1; padrão: todos) |
-| `--texto-completo` | compara também com trechos do PDF aberto, **só** com licença aberta (CC BY, CC0, CC BY-SA; PDFs de outra licença nem são baixados). O trecho traz a página: `(p. 5)` |
+| `--texto-completo` | compara também com o texto completo de acesso livre (veja [Texto completo](#texto-completo)); o trecho traz a página: `(p. 5)` |
 | `--skip literatura` | desliga o verificador |
 
 **Quais afirmações.** Frases que já citam uma obra e, na introdução/revisão, frases **sem
@@ -462,12 +485,16 @@ percentuais). Limite: `[literatura] max_afirmacoes` (padrão 15).
 2. Bases: **OpenAlex** (primária) e Semantic Scholar. Toda fonte é **confirmada** pelo DOI
    (Crossref/OpenAlex, com título conferido), pelo id do arXiv ou pelo registro do
    OpenAlex. O que não for confirmado é descartado e contado ("Fontes descartadas").
-3. O modelo **errei-cita** compara a afirmação com cada frase (e janela de 2 frases) do
-   resumo e, com `--texto-completo`, com trechos do PDF aberto.
-4. Só vira `LIT-SUG-001` a fonte em que algum trecho foi classificado como **sustenta**.
+3. Além da busca por termos, entram as obras da **rede de citações** das suas referências
+   com DOI: o que cada uma cita e quem a cita, as mais citadas primeiro (OpenAlex;
+   `[literatura] rede`, `rede_refs`). Elas passam pelos mesmos filtros e aparecem com
+   `Via: rede de citações (cita 'chave')` ou `(citada por 'chave')`.
+4. O modelo **errei-cita** compara a afirmação com cada frase (e janela de 2 frases) do
+   resumo e, com `--texto-completo`, com trechos do texto completo.
+5. Só vira `LIT-SUG-001` a fonte em que algum trecho foi classificado como **sustenta**.
    Fonte do mesmo tema sem esse trecho vira, no máximo, `LIT-REL-001`. Sem o modelo
    instalado, nada vira `LIT-SUG-001` (o relatório avisa com `CORE-DEP-001`).
-5. Ordem: força do suporte, depois qualidade da fonte (Qualis do seu `--qualis-csv` e
+6. Ordem: força do suporte, depois qualidade da fonte (Qualis do seu `--qualis-csv` e
    percentil de citações do OpenAlex), depois ano.
 
 Saída (igual no terminal, em `md`, em `json`, no campo `bloco`, e em `pdf`):

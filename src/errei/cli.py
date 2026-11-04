@@ -133,9 +133,9 @@ def audit(
         bool,
         typer.Option(
             "--texto-completo",
-            help="Com --online, baixa PDFs de acesso aberto das obras citadas para conferir "
-            "citações diretas e, no verificador literatura, compara a afirmação com o texto "
-            "aberto (só licença aberta, ex.: CC BY).",
+            help="Com --online, procura o texto completo de acesso livre (OpenAlex, Unpaywall, "
+            "Europe PMC, arXiv, CORE, página do DOI; respeita robots.txt) para validar as "
+            "atribuições e as citações diretas e, no literatura, comparar a afirmação.",
         ),
     ] = False,
     lit_max: Annotated[

@@ -60,6 +60,9 @@ DEFAULTS: dict[str, Any] = {
         "max_afirmacoes": 15,
         "ano_min": 0,
         "idiomas": [],
+        "rede": True,
+        "rede_refs": 10,
+        "rede_por_ref": 25,
     },
     # IA online (Gemini): só vale no config do USUÁRIO ou em flags, nunca no .errei.toml
     "ia_online": {"enabled": False, "modelo": "", "api_key": ""},
@@ -123,6 +126,8 @@ max_fontes = 3     # --lit-max
 max_afirmacoes = 15
 ano_min = 0        # --lit-ano-min (0 = sem limite)
 idiomas = []       # --lit-idioma pt,en (vazio = todos)
+rede = true        # sugere também obras da rede de citações das suas referências
+rede_refs = 10     # quantas referências (com DOI) expandir
 
 # [ia_online] (Gemini) é ignorado aqui por segurança: configure em
 # ~/.config/errei/config.toml ou use --ia-online com GEMINI_API_KEY no ambiente.

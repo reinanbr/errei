@@ -47,8 +47,10 @@ BY_CHECKER = {
     "continuar sendo a fonte mais adequada.",
     "literatura": "As fontes sugeridas por afirmação foram localizadas e confirmadas em bases "
     "abertas (OpenAlex, Crossref, Semantic Scholar, arXiv), mas 'sustenta' é a estimativa de "
-    "um modelo local (errei-cita) sobre o resumo e, com --texto-completo, sobre trechos de PDFs "
-    "de licença aberta: é indicador, não veredito. Os trechos são mostrados no idioma "
+    "um modelo local (errei-cita) sobre o resumo e, com --texto-completo, sobre trechos do "
+    "texto completo de acesso livre: é indicador, não veredito. Sugestões da rede de "
+    "citações são obras próximas às suas referências, não necessariamente as melhores do "
+    "tema. Os trechos são mostrados no idioma "
     "original, com no máximo 300 caracteres e a fonte; leia a obra antes de citar. A busca "
     "não cobre bases fechadas, e a ausência de fonte não significa que a afirmação esteja "
     "errada.",

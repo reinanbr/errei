@@ -159,6 +159,8 @@ def _openalex_item(it: dict[str, Any]) -> Candidate:
             "issn": [str(x) for x in (src_obj.get("issn") or []) if x],
             "percentil": float(pct.get("value") or 0.0),
             "openalex_id": str(it.get("id") or ""),
+            "citacoes": int(it.get("cited_by_count") or 0),
+            "referencias_oa": [str(w) for w in (it.get("referenced_works") or [])[:200]],
             # todas as cópias de acesso livre (url do PDF, licença), na ordem do OpenAlex
             "oa_locais": [
                 (str(loc.get("pdf_url")), str(loc.get("license") or ""))
@@ -204,6 +206,37 @@ def openalex_search_lit(
         filt.append("language:" + "|".join(idiomas))
     res = http.get_json(
         f"{OPENALEX}/works", {"search": query[:300], "filter": ",".join(filt), "per-page": rows}
+    )
+    if res is None or res[1] is None:
+        return None
+    return [_openalex_item(it) for it in res[1].get("results") or []]
+
+
+def _wid(w: str) -> str:
+    return w.rsplit("/", 1)[-1]
+
+
+def openalex_referencias(http: Any, ids: list[str], rows: int = 25) -> list[Candidate] | None:
+    """Obras que uma obra cita (ids do OpenAlex), as mais citadas primeiro."""
+    ids = [_wid(w) for w in ids if w][:50]
+    if not ids:
+        return []
+    res = http.get_json(
+        f"{OPENALEX}/works",
+        {"filter": "openalex_id:" + "|".join(ids), "sort": "cited_by_count:desc", "per-page": rows},
+    )
+    if res is None or res[1] is None:
+        return None
+    return [_openalex_item(it) for it in res[1].get("results") or []]
+
+
+def openalex_citantes(http: Any, work_id: str, rows: int = 25) -> list[Candidate] | None:
+    """Obras que citam ``work_id``, as mais citadas primeiro."""
+    if not work_id:
+        return []
+    res = http.get_json(
+        f"{OPENALEX}/works",
+        {"filter": f"cites:{_wid(work_id)}", "sort": "cited_by_count:desc", "per-page": rows},
     )
     if res is None or res[1] is None:
         return None

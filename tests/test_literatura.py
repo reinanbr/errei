@@ -66,8 +66,15 @@ def router(respx_mock: respx.MockRouter, calls: list[httpx.Request]) -> None:
     def openalex(request: httpx.Request) -> httpx.Response:
         calls.append(request)
         path = request.url.path
+        flt = request.url.params.get("filter", "")
+        if flt.startswith("openalex_id:"):
+            return httpx.Response(200, json={"results": FIX["rede_referencias"]})
+        if flt.startswith("cites:"):
+            return httpx.Response(200, json={"results": []})
         if path.startswith("/works/doi:"):
             doi = path.split("doi:", 1)[1]
+            if doi in FIX["rede_doi"]:
+                return httpx.Response(200, json=FIX["rede_doi"][doi])
             for works in FIX["openalex_busca"].values():
                 for w in works:
                     if w["doi"].endswith(doi):
@@ -102,14 +109,14 @@ def router(respx_mock: respx.MockRouter, calls: list[httpx.Request]) -> None:
     respx_mock.route().mock(return_value=httpx.Response(404, text=""))
 
 
-def projeto(tmp: Path) -> Path:
+def projeto(tmp: Path, bib: str = BIB) -> Path:
     return make_project(
         tmp / "artigo",
         {
             "main.tex": "\\documentclass[brazil]{abntex2}\n\\begin{document}\n"
             "\\input{introducao}\n\\bibliography{r}\n\\end{document}\n",
             "introducao.tex": INTRO,
-            "r.bib": BIB,
+            "r.bib": bib,
         },
     )
 
@@ -438,3 +445,48 @@ def test_trecho_limitado_a_300_caracteres(
     sug = by_code(rep.findings, "LIT-SUG-001")[0]
     trecho = next(x for x in sug.evidence if x.startswith("Trecho")).split('"')[1]
     assert len(trecho) <= 300 and trecho.endswith("…")
+
+
+class FakeCitaRede(FakeCita):
+    def probs(self, pares: list[tuple[str, str]]) -> list[dict[str, float]]:
+        out = super().probs(pares)
+        for i, (_, trecho) in enumerate(pares):
+            if "raises the engagement of engineering students" in trecho:
+                out[i] = {"sustenta": 0.88, "contradiz": 0.01, "neutro": 0.11}
+        return out
+
+
+BIB_DOI = BIB.replace("year={2019}}", "year={2019}, doi={10.2000/silva}}")
+
+
+def test_rede_de_citacoes_sugere_obra_muito_citada(
+    tmp_path: Path, respx_mock: respx.MockRouter, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    calls: list[httpx.Request] = []
+    router(respx_mock, calls)
+    monkeypatch.setattr(literatura, "_classificador", lambda: FakeCitaRede())
+    monkeypatch.setattr(literatura, "_tradutor", lambda: FakeTradutor())
+    rep = rodar(projeto(tmp_path, BIB_DOI))
+    sug = [f for f in by_code(rep.findings, "LIT-SUG-001") if f.location and f.location.line == 6]
+    assert len(sug) == 1, [f.message for f in rep.findings]
+    ev = "\n".join(sug[0].evidence)
+    assert "Park e Chan (2018). Gamified courses raise engagement" in ev
+    assert "Via: rede de citações (citada por 'silva')" in ev
+    assert not by_code(rep.findings, "LIT-NONE-001")  # antes, sem fonte para essa afirmação
+    flt = [c.url.params.get("filter", "") for c in calls]
+    assert "openalex_id:W300|W301" in flt and "cites:W900" in flt
+    g = next(g for g in rep.metrics if g.checker == "literatura")
+    m = next(m for m in g.metrics if m.name == "Candidatos da rede de citações")
+    assert m.value == 1 and "1 sugestão(ões)" in m.explanation
+
+
+def test_rede_desligada(
+    tmp_path: Path, respx_mock: respx.MockRouter, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    calls: list[httpx.Request] = []
+    router(respx_mock, calls)
+    monkeypatch.setattr(literatura, "_classificador", lambda: FakeCitaRede())
+    monkeypatch.setattr(literatura, "_tradutor", lambda: FakeTradutor())
+    rep = rodar(projeto(tmp_path, BIB_DOI), literatura={"rede": False})
+    assert not any("cites:" in c.url.params.get("filter", "") for c in calls)
+    assert not any("Via:" in " ".join(f.evidence) for f in rep.findings)

@@ -352,13 +352,20 @@ class LiteraturaChecker(BaseChecker):
         n_total = len(afirm)
         afirm = afirm[:max_afirm]
         en_queries = trad.traduzir([a.texto for a in afirm]) if trad is not None and afirm else []
-        n_sug = n_rel = n_none = n_desc = n_conf = 0
+        rede = self._rede(ctx, project, cfg, ano_min, idiomas) if cfg.get("rede", True) else []
+        n_sug = n_rel = n_none = n_desc = n_conf = n_sug_rede = 0
         for i, a in enumerate(afirm):
             ctx.progress(f"literatura {i + 1}/{len(afirm)}")
             q_pt = keywords(a.texto)
             q_en = keywords(en_queries[i], 7, EN_STOP) if i < len(en_queries) else ""
             termos = f"{q_pt} {q_en}"
             cands = self._buscar(ctx, [q for q in (q_pt, q_en) if q], ano_min, idiomas)
+            vistos = {(c.doi or "").lower() or _norm(c.title) for c in cands}
+            for c in rede:  # vizinhos das suas referências que tratam do mesmo tema
+                k = (c.doi or "").lower() or _norm(c.title)
+                if k not in vistos:
+                    vistos.add(k)
+                    cands.append(_copia(c))
             cands = [c for c in cands if _norm(c.title) not in bib_titles]
             # pré-filtro por tema antes de gastar requisições de confirmação
             for c in cands:
@@ -383,6 +390,7 @@ class LiteraturaChecker(BaseChecker):
             top_rel = rel[: max_fontes - len(top_sus)]
             for v in top_sus:
                 out += self._sug(a, v)
+                n_sug_rede += bool(v.cand.extra.get("via_rede"))
             for v in top_rel:
                 out.append(self._rel(a, v))
             n_sug += bool(top_sus)
@@ -399,6 +407,17 @@ class LiteraturaChecker(BaseChecker):
                     )
                 )
         g = MetricGroup(self.name, "Literatura por afirmação")
+        if cfg.get("rede", True):
+            g.metrics.append(
+                Metric(
+                    "Candidatos da rede de citações",
+                    len(rede),
+                    None,
+                    "—",
+                    "obras citadas por / que citam as suas referências (OpenAlex, mais "
+                    f"citadas primeiro); {n_sug_rede} sugestão(ões) vieram daí",
+                )
+            )
         g.metrics += [
             Metric(
                 "Afirmações analisadas",
@@ -556,7 +575,8 @@ class LiteraturaChecker(BaseChecker):
         evid = (
             f'Afirmação : "{a.texto}"',
             f"Fonte     : {fonte(c)}",
-            f"Base      : {c.source:<12} Idioma: {lang or '?'}",
+            f"Base      : {c.source:<12} Idioma: {lang or '?'}"
+            + (f"     Via: {c.extra['via_rede']}" if c.extra.get("via_rede") else ""),
             f'Trecho    : "{trecho(t.texto)}"  {onde}',
             f"Relação   : sustenta     Confiança: {v.confianca}",
             f"Aviso     : {AVISO}",
@@ -615,6 +635,57 @@ class LiteraturaChecker(BaseChecker):
             ),
             links=tuple(x for x in (_link(c),) if x),
         )
+
+    def _rede(
+        self,
+        ctx: RunContext,
+        project: Project,
+        cfg: dict[str, Any],
+        ano_min: int | None,
+        idiomas: tuple[str, ...],
+    ) -> list[Candidate]:
+        """Obras a um passo das referências do artigo (o que elas citam e quem as cita)."""
+        from errei.net import sources as srcs
+
+        max_refs = int(cfg.get("rede_refs", 10))
+        por_ref = int(cfg.get("rede_por_ref", 25))
+        cited = {u.key for u in project.cite_uses()}
+        entradas = [e for e in project.bib_entries if e.key in cited and e.get("doi")]
+        out: list[Candidate] = []
+        seen: set[str] = set()
+        for i, e in enumerate(entradas[:max_refs], 1):
+            ctx.progress(f"rede de citações {i}/{min(len(entradas), max_refs)}: {e.key}")
+            doi = e.get("doi").strip().removeprefix("https://doi.org/")
+            look = srcs.openalex_by_doi(ctx.http, doi)
+            if look.status != "found" or look.candidate is None:
+                continue
+            w = look.candidate
+            pool = [
+                (c, f"citada por '{e.key}'")
+                for c in srcs.openalex_referencias(
+                    ctx.http, list(w.extra.get("referencias_oa") or []), por_ref
+                )
+                or []
+            ]
+            pool += [
+                (c, f"cita '{e.key}'")
+                for c in srcs.openalex_citantes(ctx.http, str(w.extra.get("openalex_id")), por_ref)
+                or []
+            ]
+            for c, via in pool:
+                k = (c.doi or "").lower() or _norm(c.title)
+                if not k or k in seen or len(_norm(c.title)) < 8:
+                    continue
+                if ano_min and c.year and c.year < ano_min:
+                    continue
+                lang = idioma(f"{c.title}. {c.abstract}", str(c.extra.get("lingua") or ""))
+                if idiomas and lang and lang not in idiomas:
+                    continue
+                seen.add(k)
+                c.extra["lingua"] = lang
+                c.extra["via_rede"] = f"rede de citações ({via})"
+                out.append(c)
+        return out
 
     @staticmethod
     def _qualis(ctx: RunContext) -> Any:
@@ -685,6 +756,15 @@ def _inicio_frase(project: Project, use: Any) -> int:
     rel = span.start - para.start
     sent = next((x for x in sentences(para.text) if x.start <= rel < x.end + 1), None)
     return para.src(sent.start) if sent else int(use.offset)
+
+
+def _copia(c: Candidate) -> Candidate:
+    """Cópia rasa: o mesmo vizinho pode ser avaliado para várias afirmações."""
+    import copy
+
+    d = copy.copy(c)
+    d.extra = dict(c.extra)
+    return d
 
 
 def autoria(c: Candidate) -> str:

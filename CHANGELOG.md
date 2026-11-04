@@ -26,6 +26,21 @@ seguem [SemVer](https://semver.org/lang/pt-BR/).
 - `treino-gpu/`: código para treinar o `errei-cita-v2` em GPU alugada, só com dados de
   licença que permite uso comercial (recusa CC BY-NC, como o SciFact).
 
+- Texto completo (`--texto-completo`): localizador em fontes de acesso livre (todas as
+  `oa_locations` do OpenAlex, Unpaywall, Europe PMC, arXiv, CORE opcional e
+  `citation_pdf_url` da página do DOI), respeitando `robots.txt` e `Crawl-delay`.
+- `REFS-ATRIB-*` com `--texto-completo` julga a frase contra o resumo **e** o texto completo,
+  com a página do trecho; sem resumo, mas com texto, a atribuição ainda é avaliada.
+- `literatura`: sugestões da rede de citações das referências (obras que elas citam e que as
+  citam, mais citadas primeiro; `[literatura] rede`, `rede_refs`, `rede_por_ref`).
+
+### Alterado
+
+- **Regra do texto completo:** antes só PDFs com licença aberta (CC BY, CC0) eram lidos.
+  Agora vale qualquer texto de acesso livre; o relatório continua mostrando no máximo 300
+  caracteres por trecho, sempre com a fonte (citação, Lei 9.610, art. 46, III).
+- O idioma do trecho é detectado pelo próprio texto (antes vinha do idioma declarado da obra).
+
 ### Licenças
 
 - Nenhuma troca de licença do errei (continua MIT). Registradas no README as licenças de
