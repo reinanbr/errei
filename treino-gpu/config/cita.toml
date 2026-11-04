@@ -1,0 +1,53 @@
+# Hiperparâmetros versionados do errei-cita-v2.
+# Caminhos relativos são resolvidos a partir da raiz do repositório.
+
+[modelo]
+nome = "errei-cita-v2"
+# modelo-base: licença verificada no Hugging Face (tag license:mit) em 2026-11-04
+base = "microsoft/mdeberta-v3-base"
+base_licenca = "MIT"
+base_url = "https://huggingface.co/microsoft/mdeberta-v3-base"
+max_len = 256
+# LoRA (peft) só para modelos grandes (7B-13B); para o mDeBERTa (~280 M) o ajuste é completo
+lora = false
+lora_r = 16
+lora_alpha = 32
+
+[treino]
+epocas = 3
+batch = 32            # por passo; cai pela metade sozinho se faltar memória na GPU
+acumulacao = 1        # passos acumulados por atualização (sobe quando o batch cai)
+lr = 2e-5
+warmup = 0.06         # fração dos passos com aquecimento linear
+peso_decaimento = 0.01
+semente = 13
+checkpoint_passos = 500
+bf16 = "auto"         # "auto" usa bf16 se a GPU suportar; true/false força
+saida = "treino-gpu/saida"
+
+[dados]
+dir = "treino-gpu/dados"
+# ordem de tentativa; cada um passa pela checagem de licença em cita/dados.py
+conjuntos = ["pubhealth", "scitail", "snli", "anotacoes"]
+# licenças "a confirmar" só entram se você conferir na fonte e listar aqui
+confirmadas = []
+# CC BY-SA permite uso comercial, mas obriga os pesos a sair também em CC BY-SA
+aceitar_sa = false
+max_por_conjunto = 60000
+neutros_por_exemplo = 2
+max_premissa = 600    # caracteres por trecho da fonte (o errei compara frase a frase)
+# pares em português: tradução automática da afirmação (en -> pt)
+traduzir_pt = true
+fracao_pt = 0.5
+tradutor = "Helsinki-NLP/opus-mt-en-ROMANCE"
+tradutor_licenca = "Apache-2.0"
+validacao = 0.05
+teste = 0.05
+
+[custo]
+# confira o preço na Hostinger antes de contratar
+gpu = "RTX 4090 (24 GB)"
+preco_hora_usd = 0.42
+# passos/s de referência do mDeBERTa-base, max_len 256, batch 32, bf16 numa RTX 4090;
+# "treinar.py --estimar" mede de verdade quando há GPU
+passos_por_segundo = 3.0

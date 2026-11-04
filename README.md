@@ -170,6 +170,13 @@ Os pesos ficam em `~/.local/share/errei/modelos/errei-cita-v1` (ou `$ERREI_MODEL
 código do errei continua MIT. Sem o modelo, a existência das obras continua sendo verificada
 e o relatório informa que a validação das atribuições foi pulada.
 
+**errei-cita-v2 (sem restrição NC).** A pasta [`treino-gpu/`](treino-gpu/LEIAME.md) tem o
+código para treinar o v2 numa GPU alugada, só com dados e modelo-base de licença que permite
+uso comercial (PUBHEALTH, MIT; anotações próprias, CC BY 4.0; `microsoft/mdeberta-v3-base`,
+MIT). `cita/dados.py` recusa CC BY-NC. Quando `errei-cita-v2` está instalado
+(`errei modelo instalar <pasta> --nome errei-cita-v2`), o errei passa a usá-lo no lugar do
+v1.
+
 ### O modelo errei-resumo
 
 A NBR 6028:2021 pede que o resumo ressalte **objetivo, método, resultados e conclusões**. A

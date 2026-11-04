@@ -99,4 +99,4 @@ module = ["tomli", "reportlab.*", "torch.*", "transformers.*", "sentencepiece.*"
 ignore_missing_imports = true
 
 [tool.hatch.build.targets.sdist]
-exclude = ["/treino/dados", "/treino/modelos", "/.venv", "/.claude", "/dist", "*.log"]
+exclude = ["/treino/dados", "/treino/modelos", "/treino-gpu/dados", "/treino-gpu/saida", "/.venv-gpu", "/.venv", "/.claude", "/dist", "*.log"]

@@ -10,3 +10,8 @@ coverage.xml
 .pytest_cache/
 treino/dados/
 treino/modelos/
+
+# treino-gpu: dados baixados, saídas e ambiente da GPU
+/treino-gpu/dados/
+/treino-gpu/saida/
+/.venv-gpu/

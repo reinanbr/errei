@@ -1,0 +1,16 @@
+Anotações do projeto errei (treino-gpu/anotacoes/*.jsonl)
+
+Os pares anotados à mão nesta pasta (afirmação, relação e metadados) são publicados sob a
+licença Creative Commons Atribuição 4.0 Internacional (CC BY 4.0):
+https://creativecommons.org/licenses/by/4.0/legalcode.pt
+
+Atribuição sugerida: "Anotações errei-cita, projeto errei (https://github.com/reinanbr/errei),
+CC BY 4.0".
+
+Exceção: exemplo.jsonl contém exemplos SINTÉTICOS escritos pelo projeto, dedicados ao domínio
+público (CC0 1.0, https://creativecommons.org/publicdomain/zero/1.0/legalcode.pt). Eles servem
+para documentar o formato e para o teste de fumaça, e nunca entram no treino real.
+
+Os trechos ("trecho") só podem vir de fontes com licença aberta (CC BY, CC0, domínio
+público), indicada em "fonte_licenca". A licença de cada trecho continua sendo a da sua
+fonte, que deve ser citada em "fonte" e "fonte_doi".
