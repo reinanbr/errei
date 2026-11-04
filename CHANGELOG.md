@@ -3,6 +3,34 @@
 Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/); versões
 seguem [SemVer](https://semver.org/lang/pt-BR/).
 
+## [Não lançado]
+
+### Adicionado
+
+- Verificador `literatura` (com `--online`): para cada afirmação, fontes nacionais e
+  internacionais (OpenAlex como base primária e Semantic Scholar; consulta em pt e en) que
+  **sustentam** a afirmação segundo o errei-cita, com o trecho da fonte no idioma original
+  (até 300 caracteres, com página quando vem do texto aberto). Regras `LIT-SUG-001`,
+  `LIT-REL-001`, `LIT-NONE-001` e `LIT-LANG-001`. Toda fonte é confirmada por DOI, arXiv
+  ou registro do OpenAlex; as não confirmadas são descartadas e contadas.
+- Opções `--lit-max`, `--lit-ano-min` e `--lit-idioma`; seção `[literatura]` no config.
+  `--texto-completo` também vale para o `literatura` (só PDFs com licença aberta).
+- Extra opcional `errei[traducao]`: tradutor local pt→en `Helsinki-NLP/opus-mt-ROMANCE-en`
+  (Apache-2.0), só para a consulta.
+- JSON: achados `LIT-*` trazem o campo `bloco`, com o mesmo texto do terminal. PDF: seção
+  "Literatura por afirmação".
+- `tests/test_licencas.py`: falha se alguma dependência instalada tiver licença fora da
+  lista OSI aprovada.
+- `treino-gpu/`: código para treinar o `errei-cita-v2` em GPU alugada, só com dados de
+  licença que permite uso comercial (recusa CC BY-NC, como o SciFact).
+
+### Licenças
+
+- Nenhuma troca de licença do errei (continua MIT). Registradas no README as licenças de
+  todas as dependências; `language-tool-python` (extra `ptbr`) é GPL-3.0, aprovada pela OSI.
+- O `errei-cita-v2` sai de modelo-base MIT (`microsoft/mdeberta-v3-base`) e de dados sem
+  cláusula NC, para retirar a restrição CC BY-NC dos pesos do v1.
+
 ## [0.6.0] - 2026-11-03
 
 ### Adicionado

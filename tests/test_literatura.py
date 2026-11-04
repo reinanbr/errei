@@ -311,3 +311,31 @@ def test_saida_exata_terminal_md_json_pdf(
 
     texto = " ".join(p.extract_text() or "" for p in PdfReader(str(pdf)).pages)
     assert "LIT-SUG-001" in texto and "Literatura por afirmação" in texto
+
+
+def test_cli_opcoes_lit(tmp_path: Path) -> None:
+    from helpers import cli
+
+    root = projeto(tmp_path)
+    res = cli(
+        str(root),
+        "--format",
+        "json",
+        "--no-user-config",
+        "--only",
+        "literatura",
+        "--lit-max",
+        "2",
+        "--lit-ano-min",
+        "2018",
+        "--lit-idioma",
+        "pt,en",
+    )
+    assert res.exit_code in (0, 1), res.output
+    data = json.loads(res.stdout)
+    assert data["meta"]["flags"]["lit_max"] == 2
+    assert data["meta"]["checkers"] == ["literatura"]
+    assert [f["code"] for f in data["findings"]] == ["CORE-NET-001"]  # offline: pulado
+    assert cli(str(root), "--lit-idioma", "português").exit_code == 2
+    assert cli(str(root), "--lit-ano-min", "18").exit_code == 2
+    assert cli(str(root), "--skip", "literatura", "--format", "json").exit_code in (0, 1)

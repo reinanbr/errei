@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import os
+import re
 import sys
 from enum import Enum
 from pathlib import Path
@@ -133,9 +134,26 @@ def audit(
         typer.Option(
             "--texto-completo",
             help="Com --online, baixa PDFs de acesso aberto das obras citadas para conferir "
-            "citações diretas.",
+            "citações diretas e, no verificador literatura, compara a afirmação com o texto "
+            "aberto (só licença aberta, ex.: CC BY).",
         ),
     ] = False,
+    lit_max: Annotated[
+        int | None,
+        typer.Option(
+            "--lit-max", min=1, help="literatura: máximo de fontes por afirmação (padrão 3)."
+        ),
+    ] = None,
+    lit_ano_min: Annotated[
+        int | None,
+        typer.Option("--lit-ano-min", help="literatura: só fontes publicadas a partir de AAAA."),
+    ] = None,
+    lit_idioma: Annotated[
+        str | None,
+        typer.Option(
+            "--lit-idioma", help="literatura: idiomas das fontes, ex.: pt,en (padrão: todos)."
+        ),
+    ] = None,
     tipo: Annotated[
         str | None,
         typer.Option(
@@ -187,6 +205,22 @@ def audit(
         overrides["refs"] = {"texto_completo": True}
     if sem_cache:
         overrides["sem_cache"] = True
+    lit: dict[str, Any] = {}
+    if lit_max is not None:
+        lit["max_fontes"] = lit_max
+    if lit_ano_min is not None:
+        if not 1000 <= lit_ano_min <= 9999:
+            _err("--lit-ano-min deve ser um ano com 4 dígitos (AAAA)")
+            raise typer.Exit(2)
+        lit["ano_min"] = lit_ano_min
+    if lit_idioma:
+        langs = [x.strip().lower() for x in lit_idioma.split(",") if x.strip()]
+        if any(not re.fullmatch(r"[a-z]{2}", x) for x in langs):
+            _err("--lit-idioma espera códigos ISO 639-1 separados por vírgula, ex.: pt,en")
+            raise typer.Exit(2)
+        lit["idiomas"] = langs
+    if lit:
+        overrides["literatura"] = lit
     if referencia:
         if referencia.lower() not in ("brasil", "mundo"):
             _err("--referencia deve ser brasil ou mundo")
@@ -234,6 +268,9 @@ def audit(
             "periodico": per.get("periodico"),
             "pdf": str(pdf) if pdf else None,
             "texto_completo": texto_completo,
+            "lit_max": lit_max,
+            "lit_ano_min": lit_ano_min,
+            "lit_idioma": lit_idioma,
             "sem_cache": sem_cache,
             "referencia": referencia,
             "tipo": tipo,

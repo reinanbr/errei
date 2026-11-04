@@ -1,6 +1,6 @@
 ---
 name: errei
-description: Audita um artigo ou monografia em LaTeX (pt-BR) com a CLI errei e resume o relatório (estrutura, completude, referências, obras nacionais, ABNT, escrita, similaridade, indícios de IA, prontidão). Use quando o usuário pedir para revisar/auditar um artigo LaTeX ou rodar /errei.
+description: Audita um artigo ou monografia em LaTeX (pt-BR) com a CLI errei e resume o relatório (estrutura, completude, referências, obras nacionais, literatura por afirmação, ABNT, escrita, similaridade, indícios de IA, prontidão). Use quando o usuário pedir para revisar/auditar um artigo LaTeX ou rodar /errei.
 ---
 
 # /errei — auditoria de artigo LaTeX
@@ -57,6 +57,9 @@ Camada fina sobre a CLI `errei`. Não reimplemente verificações: rode a CLI e 
      métrica "Obrigatórios presentes" e o que cada elemento deve conter;
    - **obras nacionais** (`NAC-SUG-001`): para cada citação estrangeira, as obras
      brasileiras localizadas (evidence), lembrando que devem ser lidas antes de citar;
+   - **literatura por afirmação** (`LIT-SUG-001`, com `--online`): reproduza o campo `bloco`
+     do JSON (afirmação, fonte, trecho no idioma original, confiança). `LIT-REL-001` é fonte
+     do mesmo tema que **não** sustenta; nunca apresente como apoio. Sempre "leia a fonte";
    - orientações de IA (`COMP-IA-001`) são orientações: não as transforme em texto pronto
      para o trabalho;
    - feche com 1–2 linhas da seção Limitações.

@@ -44,6 +44,7 @@ dev = [
     "respx>=0.21",
     "mypy>=1.10",
     "ruff>=0.5",
+    "packaging>=23",
 ]
 
 [project.scripts]

@@ -42,6 +42,7 @@ Extras opcionais (instale só o que precisar):
 | `errei[plagio]` | `pypdf`: PDFs no corpus local de comparação |
 | `errei[pdf]` | `reportlab`: relatório em PDF (`--pdf`, `--format pdf`) |
 | `errei[modelo]` | `torch` + `transformers`: modelo **errei-cita** de validação de citações |
+| `errei[traducao]` | `torch` + `transformers` + `sentencepiece`: tradutor local pt→en (`Helsinki-NLP/opus-mt-ROMANCE-en`, Apache-2.0) para a consulta em inglês do verificador `literatura` |
 | `errei[all]` | online, ptbr, plagio e pdf (o modelo é separado por ser grande) |
 
 Sem um extra, o verificador correspondente é pulado em parte, e o relatório informa isso
@@ -416,6 +417,69 @@ Regras garantidas no código:
 - **A chave fica em sigilo.** Ela vai no cabeçalho `x-goog-api-key` e nunca é gravada em
   cache, relatório ou log.
 
+## Literatura que sustenta cada afirmação
+
+Com `--online`, o verificador `literatura` procura, para cada afirmação que precisa de
+apoio, obras **nacionais e internacionais** que **digam aquilo que a afirmação diz**, e
+mostra o trecho da fonte que prova isso.
+
+```bash
+errei caminho/artigo --online --only literatura
+errei caminho/artigo --online --only literatura --texto-completo
+errei caminho/artigo --online --lit-max 2 --lit-ano-min 2015 --lit-idioma pt,en
+```
+
+| opção | efeito |
+|---|---|
+| `--lit-max N` | máximo de fontes por afirmação (padrão 3; `[literatura] max_fontes`) |
+| `--lit-ano-min AAAA` | só fontes publicadas a partir desse ano |
+| `--lit-idioma pt,en` | só fontes nesses idiomas (ISO 639-1; padrão: todos) |
+| `--texto-completo` | compara também com trechos do PDF aberto, **só** com licença aberta (CC BY, CC0, CC BY-SA) |
+| `--skip literatura` | desliga o verificador |
+
+**Quais afirmações.** Frases que já citam uma obra e, na introdução/revisão, frases **sem
+citação** com marcas de generalização ("estudos mostram", "é amplamente", "reduz",
+percentuais). Limite: `[literatura] max_afirmacoes` (padrão 15).
+
+**Como decide.**
+
+1. Consulta em português **e** em inglês (a tradução da consulta usa o tradutor local
+   opcional `errei[traducao]`; sem ele, só português, e o relatório avisa). A busca não é
+   restrita ao Brasil nem ao português.
+2. Bases: **OpenAlex** (primária) e Semantic Scholar. Toda fonte é **confirmada** pelo DOI
+   (Crossref/OpenAlex, com título conferido), pelo id do arXiv ou pelo registro do
+   OpenAlex. O que não for confirmado é descartado e contado ("Fontes descartadas").
+3. O modelo **errei-cita** compara a afirmação com cada frase (e janela de 2 frases) do
+   resumo e, com `--texto-completo`, com trechos do PDF aberto.
+4. Só vira `LIT-SUG-001` a fonte em que algum trecho foi classificado como **sustenta**.
+   Fonte do mesmo tema sem esse trecho vira, no máximo, `LIT-REL-001`. Sem o modelo
+   instalado, nada vira `LIT-SUG-001` (o relatório avisa com `CORE-DEP-001`).
+5. Ordem: força do suporte, depois qualidade da fonte (Qualis do seu `--qualis-csv` e
+   percentil de citações do OpenAlex), depois ano.
+
+Saída (igual no terminal, em `md`, em `json`, no campo `bloco`, e em `pdf`):
+
+```
+LIT-SUG-001  sugestão  introducao.tex:42:1
+Afirmação : "O uso de redes neurais reduz o tempo de diagnóstico."
+Fonte     : Sobrenome et al. (2022). Título do artigo. Periódico. DOI: 10.xxxx/xxxx
+Base      : OpenAlex     Idioma: en
+Trecho    : "<até 300 caracteres copiados da fonte, no idioma original>"  (p. 5)
+Relação   : sustenta     Confiança: média
+Aviso     : indicador, não veredito. Leia a fonte antes de citar.
+
+LIT-REL-001  info  introducao.tex:42:1
+Fonte relacionada (NÃO sustenta a afirmação): Sobrenome (2020). Título. DOI: ...
+Motivo: nenhum trecho do resumo ou do texto aberto afirma o que a frase afirma.
+
+LIT-NONE-001  info  introducao.tex:42:1  nenhuma fonte encontrada para esta afirmação.
+```
+
+`LIT-LANG-001` avisa quando o trecho está em outro idioma: ele é mostrado no original, e
+qualquer tradução é automática e não é citação. Sem `--online`, o verificador **não faz
+nenhuma requisição** e o relatório diz que foi pulado (`CORE-NET-001`). Nada é escrito
+no `.tex` nem no `.bib`.
+
 ## Verificadores
 
 Cada verificador é um plugin descoberto pelo grupo de entry points `errei.checkers`
@@ -433,6 +497,7 @@ Cada verificador é um plugin descoberto pelo grupo de entry points `errei.check
 | `periodico` | estrato Qualis **do periódico-alvo** (CSV), métricas abertas do OpenAlex e índice de prontidão 0–100 por componentes |
 | `completude` | o que falta para o trabalho estar completo: checklist de elementos pré-textuais, textuais e pós-textuais da NBR 6022 (artigo) ou NBR 14724 (monografia, TCC, dissertação, tese), dados da capa/folha de rosto (abnTeX2) e o que escrever em cada elemento ausente |
 | `nacionais` | com `--online`, sugere **artigos e livros brasileiros** para afirmações que citam obras estrangeiras (OpenAlex com autoria no Brasil, Open Library e Google Books em português), ordenados pelo modelo errei-cita |
+| `literatura` | com `--online`, para cada afirmação, fontes **nacionais e internacionais** (OpenAlex, Semantic Scholar; confirmadas por DOI/arXiv) em que o modelo errei-cita acha um trecho que **sustenta** a afirmação; as do mesmo tema que não sustentam aparecem como relacionadas |
 
 ## Tabela Qualis (CSV)
 
@@ -592,6 +657,10 @@ possíveis falsos positivos e negativos.
 | `LATEX-PARSE-001` | info | Extração de texto aproximada | determinística |
 | `LATEX-REF-001` | erro | Referência cruzada para rótulo inexistente | determinística |
 | `LATEX-TODO-001` | aviso | Pendência esquecida | determinística |
+| `LIT-LANG-001` | info | Trecho em outro idioma | determinística |
+| `LIT-NONE-001` | info | Nenhuma fonte encontrada | determinística |
+| `LIT-REL-001` | info | Fonte relacionada que NÃO sustenta a afirmação | heurística |
+| `LIT-SUG-001` | sugestão | Fonte que sustenta a afirmação | heurística |
 | `NAC-IA-001` | info | Sugestões da IA descartadas | determinística |
 | `NAC-SUG-001` | sugestão | Obra brasileira para a mesma afirmação | heurística |
 | `PERIOD-OA-001` | info | Métricas abertas do periódico (OpenAlex) | determinística |
@@ -649,4 +718,31 @@ possíveis falsos positivos e negativos.
 
 ## Licença
 
-MIT. Veja [LICENSE](LICENSE).
+MIT. Veja [LICENSE](LICENSE). O errei é **inteiramente open source**, também nos modelos,
+nos dados e nas dependências: nenhuma função exige serviço pago (o Gemini é opcional e
+desligado por padrão), e o teste `tests/test_licencas.py` falha se uma dependência
+instalada declarar licença fora da lista aprovada pela OSI.
+
+### Dependências e licenças
+
+| pacote | extra | licença |
+|---|---|---|
+| typer, rich, pylatexenc | núcleo | MIT |
+| tomli (Python < 3.11) | núcleo | MIT |
+| httpx | online | BSD-3-Clause |
+| rapidfuzz | online | MIT |
+| language-tool-python | ptbr | GPL-3.0 (OSI; copyleft, só no extra opcional) |
+| pyspellchecker | ptbr | MIT |
+| pypdf | plagio | BSD-3-Clause |
+| reportlab | pdf | BSD-3-Clause |
+| torch | modelo, traducao | BSD-3-Clause |
+| transformers | modelo, traducao | Apache-2.0 |
+| sentencepiece | modelo, traducao | Apache-2.0 |
+
+Modelos:
+
+| modelo | licença | observação |
+|---|---|---|
+| `errei-cita-v1` | CC BY-NC 2.0 (herdada do SciFact) | será substituído pelo `errei-cita-v2` (ver `treino-gpu/`), treinado só com dados de uso comercial permitido |
+| `errei-resumo-v1` | Apache-2.0 | |
+| `opus-mt-ROMANCE-en` (tradutor opcional) | Apache-2.0 | Helsinki-NLP, usado só para montar a consulta em inglês |
