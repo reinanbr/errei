@@ -597,7 +597,7 @@ def coletar(project: Project) -> list[Afirmacao]:
         if key in seen:
             continue
         seen.add(key)
-        out.append(Afirmacao(c.claim, u.source, u.offset, True))
+        out.append(Afirmacao(c.claim, u.source, _inicio_frase(project, u), True))
     for src in project.tex:
         ct = project.clean(src)
         secs = sorted(ct.sections, key=lambda s: s.clean_start)
@@ -625,6 +625,18 @@ def coletar(project: Project) -> list[Afirmacao]:
     order = {s.path: i for i, s in enumerate(project.tex)}
     out.sort(key=lambda a: (order.get(a.source.path, 0), a.offset))
     return out
+
+
+def _inicio_frase(project: Project, use: Any) -> int:
+    """Offset de fonte do início da frase que contém a citação."""
+    ct = project.clean(use.source)
+    span = next((c for c in ct.cites if ct.src(c.start) == use.command.start), None)
+    para = next((p for p in ct.paragraphs if p.start <= span.start < p.end), None) if span else None
+    if span is None or para is None:
+        return int(use.offset)
+    rel = span.start - para.start
+    sent = next((x for x in sentences(para.text) if x.start <= rel < x.end + 1), None)
+    return para.src(sent.start) if sent else int(use.offset)
 
 
 def autoria(c: Candidate) -> str:

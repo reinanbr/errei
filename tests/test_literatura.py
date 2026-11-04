@@ -272,3 +272,42 @@ def test_explain_lista_regras_lit() -> None:
     out = cli("explain", "--list").output
     for code in ("LIT-SUG-001", "LIT-REL-001", "LIT-NONE-001", "LIT-LANG-001"):
         assert code in out
+
+
+def test_saida_exata_terminal_md_json_pdf(
+    tmp_path: Path, respx_mock: respx.MockRouter, modelos: None
+) -> None:
+    from errei.report import render
+    from errei.report.pdf import write_pdf
+
+    router(respx_mock, [])
+    rep = rodar(projeto(tmp_path))
+    term = render.to_term_string(rep)
+    md = render.to_markdown(rep)
+    data = json.loads(render.to_json(rep))
+    esperado = [
+        "LIT-SUG-001  sugestão  introducao.tex:2:1",
+        'Afirmação : "O uso de redes neurais reduz o tempo de diagnóstico em hospitais."',
+        "Fonte     : Smith et al. (2022). Neural networks shorten diagnostic time in emergency "
+        "departments. Journal of Medical Systems. DOI: 10.1000/nn.2022",
+        "Base      : OpenAlex     Idioma: en",
+        'Trecho    : "The use of neural networks reduces diagnostic time in hospitals by 30 '
+        'percent."  (resumo)',
+        "Relação   : sustenta     Confiança: média",
+        "Aviso     : indicador, não veredito. Leia a fonte antes de citar.",
+    ]
+    for ln in esperado:
+        assert ln in term, ln
+        assert ln in md, ln
+    bloco = next(f["bloco"] for f in data["findings"] if f["code"] == "LIT-SUG-001")
+    assert bloco.splitlines() == esperado
+    assert "LIT-NONE-001  info  introducao.tex:6:1  nenhuma fonte encontrada" in term
+    assert "LIT-REL-001  info  introducao.tex:4:1" in md
+    assert "Fonte relacionada (NÃO sustenta a afirmação): Souza (2020)." in md
+    assert "## Limitações" in md and any("errei-cita" in x for x in rep.limitations)
+    pdf = tmp_path / "r.pdf"
+    write_pdf(rep, pdf)
+    from pypdf import PdfReader
+
+    texto = " ".join(p.extract_text() or "" for p in PdfReader(str(pdf)).pages)
+    assert "LIT-SUG-001" in texto and "Literatura por afirmação" in texto

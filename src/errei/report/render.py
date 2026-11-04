@@ -17,6 +17,7 @@ from rich.text import Text
 
 from errei.model import Finding, Severity
 from errei.report.build import Report
+from errei.report.literatura import bloco, is_lit
 
 JSON_SCHEMA_VERSION = 1
 
@@ -68,7 +69,10 @@ def to_json(report: Report) -> str:
             "total": len(report.findings),
             "suppressed": report.suppressed,
         },
-        "findings": [f.to_dict() for f in report.findings],
+        "findings": [
+            {**f.to_dict(), "bloco": "\n".join(bloco(f))} if is_lit(f) else f.to_dict()
+            for f in report.findings
+        ],
         "metrics": [
             {
                 "checker": g.checker,
@@ -186,6 +190,11 @@ def to_markdown(report: Report) -> str:
     for file, items in _group_by_file(report.findings).items():
         out.append(f"### `{file}`\n")
         for f in items:
+            if is_lit(f):
+                out.append("\n```text")
+                out += [ln.replace("```", "ʼʼʼ") for ln in bloco(f)]
+                out.append("```\n")
+                continue
             loc = ""
             if f.location:
                 loc = f"L{f.location.line}"
@@ -328,6 +337,11 @@ def render_term(
                 continue
         console.rule(Text(file, style="bold"), align="left")
         for f in items:
+            if is_lit(f):
+                for i, ln in enumerate(bloco(f)):
+                    console.print(Text(ln, style="" if i == 0 else "dim"), soft_wrap=True)
+                console.print()
+                continue
             line = Text()
             loc = ""
             if f.location:

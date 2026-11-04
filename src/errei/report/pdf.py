@@ -142,6 +142,15 @@ def write_pdf(report: Report, path: Path) -> None:
         "cell": ParagraphStyle(
             "c", parent=base["BodyText"], fontName=font, fontSize=7.8, leading=9.6
         ),
+        "mono": ParagraphStyle(
+            "m",
+            parent=base["BodyText"],
+            fontName=font,
+            fontSize=7.4,
+            leading=9.4,
+            backColor=colors.HexColor("#f6f7f9"),
+            borderPadding=3,
+        ),
         "cellb": ParagraphStyle(
             "cb", parent=base["BodyText"], fontName=bold, fontSize=7.8, leading=9.6
         ),
@@ -318,6 +327,31 @@ def write_pdf(report: Report, path: Path) -> None:
         )
     else:
         story.append(P("Nenhuma sugestão.", "p"))
+
+    # ---------------------------------------------------------------- literatura
+    from errei.report.literatura import bloco, is_lit
+
+    lits = [f for f in report.findings if is_lit(f)]
+    if lits:
+        story.append(P("Literatura por afirmação", "h1"))
+        story.append(
+            P(
+                "Fontes confirmadas em bases abertas para cada afirmação. 'sustenta' é a "
+                "estimativa do modelo errei-cita: indicador, não veredito. Os trechos estão "
+                "no idioma original; leia a fonte antes de citar.",
+                "note",
+            )
+        )
+        story.append(Spacer(1, 4))
+        for f in lits:
+            story.append(
+                KeepTogether(
+                    [
+                        P("<br/>".join(t(ln).replace("  ", "&nbsp; ") for ln in bloco(f)), "mono"),
+                        Spacer(1, 6),
+                    ]
+                )
+            )
 
     # ---------------------------------------------------------------- referências
     if report.references:
