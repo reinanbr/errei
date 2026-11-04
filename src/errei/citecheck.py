@@ -20,17 +20,27 @@ from pathlib import Path
 from typing import Any
 
 MODEL_NAME = "errei-cita-v1"
+# v2 (treino-gpu/): sem dados NC; quando instalado, é preferido ao v1
+MODEL_V2 = "errei-cita-v2"
 _SPLIT = re.compile(r"(?<=[.!?])\s+(?=[A-Z0-9(\[À-Ý])")
 _lock = threading.Lock()
 _cache: dict[str, Any] = {}
 
 
+def dir_de(nome: str) -> Path:
+    base = os.environ.get("XDG_DATA_HOME") or str(Path.home() / ".local" / "share")
+    return Path(base) / "errei" / "modelos" / nome
+
+
 def model_dir() -> Path:
+    """``$ERREI_MODEL_DIR``, senão o errei-cita-v2 instalado, senão o v1."""
     env = os.environ.get("ERREI_MODEL_DIR")
     if env:
         return Path(env).expanduser()
-    base = os.environ.get("XDG_DATA_HOME") or str(Path.home() / ".local" / "share")
-    return Path(base) / "errei" / "modelos" / MODEL_NAME
+    v2 = dir_de(MODEL_V2)
+    if (v2 / "config.json").is_file():
+        return v2
+    return dir_de(MODEL_NAME)
 
 
 def unavailable_reason() -> str | None:
@@ -43,7 +53,7 @@ def unavailable_reason() -> str | None:
         return "instale o extra: pip install 'errei[modelo]'"
     d = model_dir()
     if not (d / "config.json").is_file():
-        return f"modelo {MODEL_NAME} não instalado em {d} (veja 'errei modelo info')"
+        return f"modelo {d.name} não instalado em {d} (veja 'errei modelo info')"
     return None
 
 

@@ -440,7 +440,8 @@ def modelo_info() -> None:
     for mod in (citecheck, resumocheck):
         d = mod.model_dir()
         reason = mod.unavailable_reason()
-        typer.echo(f"modelo: {mod.MODEL_NAME} — {DESCRICAO[mod.MODEL_NAME]}")
+        nome_m = d.name if d.name in DESCRICAO else mod.MODEL_NAME
+        typer.echo(f"modelo: {nome_m} — {DESCRICAO[nome_m]}")
         typer.echo(f"  pasta:  {d}")
         typer.echo(f"  estado: {'pronto' if reason is None else reason}")
         card = d / "errei_avaliacao.json"
@@ -468,7 +469,9 @@ def modelo_info() -> None:
 
 NomeOpt = Annotated[
     str | None,
-    typer.Option("--nome", help="errei-cita-v1 ou errei-resumo-v1 (padrão: todos)."),
+    typer.Option(
+        "--nome", help="errei-cita-v1, errei-cita-v2 ou errei-resumo-v1 (padrão: v1 e resumo)."
+    ),
 ]
 
 
@@ -480,9 +483,9 @@ def modelo_baixar(
     force: Annotated[bool, typer.Option("--force", help="Substitui o instalado.")] = False,
     nome: NomeOpt = None,
 ) -> None:
-    from errei.modelo_dist import MODELOS, ModelDownloadError, baixar
+    from errei.modelo_dist import PADRAO_BAIXAR, ModelDownloadError, baixar
 
-    nomes = [nome] if nome else list(MODELOS)
+    nomes = [nome] if nome else list(PADRAO_BAIXAR)
     falhas = 0
     for n in nomes:
         try:
@@ -501,7 +504,8 @@ def modelo_instalar(
     origem: Annotated[Path, typer.Argument(help="Pasta com config.json e pesos.")],
     force: Annotated[bool, typer.Option("--force", help="Substitui o instalado.")] = False,
     nome: Annotated[
-        str, typer.Option("--nome", help="errei-cita-v1 (padrão) ou errei-resumo-v1.")
+        str,
+        typer.Option("--nome", help="errei-cita-v1 (padrão), errei-cita-v2 ou errei-resumo-v1."),
     ] = "errei-cita-v1",
 ) -> None:
     import shutil

@@ -3,6 +3,7 @@
 Modelos:
 
 * ``errei-cita-v1``: atribuição de citações (pesos CC BY-NC 2.0, herdada do SciFact);
+* ``errei-cita-v2``: idem, treinado só com dados de uso comercial permitido (treino-gpu/);
 * ``errei-resumo-v1``: papel das frases do resumo, NBR 6028 (Apache-2.0).
 
 Os tarballs (gerados por ``scripts/empacotar-modelo.sh``) ficam na release fixa
@@ -26,11 +27,19 @@ from pathlib import Path
 from errei import citecheck, resumocheck
 
 MODELOS: dict[str, Callable[[], Path]] = {
-    citecheck.MODEL_NAME: citecheck.model_dir,
+    citecheck.MODEL_NAME: lambda: (
+        citecheck.model_dir()
+        if os.environ.get("ERREI_MODEL_DIR")
+        else citecheck.dir_de(citecheck.MODEL_NAME)
+    ),
+    citecheck.MODEL_V2: lambda: citecheck.dir_de(citecheck.MODEL_V2),
     resumocheck.MODEL_NAME: resumocheck.model_dir,
 }
+# o que 'errei modelo baixar' sem --nome baixa (o v2 entra quando for publicado)
+PADRAO_BAIXAR = (citecheck.MODEL_NAME, resumocheck.MODEL_NAME)
 DESCRICAO = {
     citecheck.MODEL_NAME: "atribuição de citações (frase do artigo × resumo da obra)",
+    citecheck.MODEL_V2: "atribuição de citações, v2 (sem dados NC; frase × trecho do texto)",
     resumocheck.MODEL_NAME: "papel das frases do resumo: objetivo, método, resultados (NBR 6028)",
 }
 MODELOS_TAG = os.environ.get("ERREI_MODELOS_TAG", "modelos")
