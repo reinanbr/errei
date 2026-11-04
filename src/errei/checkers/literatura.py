@@ -100,25 +100,55 @@ EN_STOP = frozenset(
         "using",
     ]
 )
+# palavras funcionais exclusivas de cada língua (sem "a", "do", "no", "as": ambíguas)
 PT_MARK = frozenset(
     [
         "de",
         "da",
-        "do",
         "das",
         "dos",
         "que",
         "não",
+        "nao",
         "uma",
+        "um",
         "para",
         "com",
         "são",
+        "sao",
         "pelo",
         "pela",
+        "pelos",
+        "pelas",
         "entre",
         "também",
+        "tambem",
         "como",
         "mais",
+        "em",
+        "na",
+        "nas",
+        "os",
+        "ao",
+        "aos",
+        "foi",
+        "foram",
+        "é",
+        "e",
+        "se",
+        "seu",
+        "sua",
+        "seus",
+        "suas",
+        "este",
+        "esta",
+        "isso",
+        "ou",
+        "já",
+        "ja",
+        "quando",
+        "sobre",
+        "mas",
     ]
 )
 EN_MARK = frozenset(
@@ -136,6 +166,28 @@ EN_MARK = frozenset(
         "which",
         "were",
         "been",
+        "was",
+        "has",
+        "have",
+        "in",
+        "on",
+        "by",
+        "to",
+        "at",
+        "it",
+        "its",
+        "their",
+        "these",
+        "those",
+        "we",
+        "our",
+        "an",
+        "or",
+        "but",
+        "not",
+        "than",
+        "also",
+        "be",
     ]
 )
 MIN_TERMOS = 0.25
@@ -163,7 +215,7 @@ def idioma(texto: str, declarado: str = "") -> str:
     if declarado:
         return declarado.lower()[:2]
     ws = _norm(texto).split()
-    pt = sum(w in PT_MARK for w in ws)
+    pt = sum(w in PT_MARK for w in ws) + 2 * len(re.findall(r"[ãõçâêô]", texto.lower()))
     en = sum(w in EN_MARK for w in ws)
     if not pt and not en:
         return ""
@@ -503,7 +555,8 @@ class LiteraturaChecker(BaseChecker):
     def _sug(self, a: Afirmacao, v: Avaliacao) -> list[Finding]:
         c, t = v.cand, v.trecho
         assert t is not None
-        lang = idioma(t.texto, str(c.extra.get("lingua") or ""))
+        # idioma do TRECHO (um PDF pode estar em outra língua que a declarada da obra)
+        lang = idioma(t.texto) or idioma("", str(c.extra.get("lingua") or ""))
         onde = f"(p. {t.pagina})" if t.pagina else "(resumo)"
         evid = (
             f'Afirmação : "{a.texto}"',

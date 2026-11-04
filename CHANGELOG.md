@@ -17,6 +17,8 @@ seguem [SemVer](https://semver.org/lang/pt-BR/).
   `--texto-completo` também vale para o `literatura` (só PDFs com licença aberta).
 - Extra opcional `errei[traducao]`: tradutor local pt→en `Helsinki-NLP/opus-mt-ROMANCE-en`
   (Apache-2.0), só para a consulta.
+- `errei modelo baixar --nome opus-mt-ROMANCE-en`: baixa o tradutor do Hugging Face numa
+  revisão fixa e confere o sha256 dos pesos; `errei modelo info` mostra o estado dele.
 - JSON: achados `LIT-*` trazem o campo `bloco`, com o mesmo texto do terminal. PDF: seção
   "Literatura por afirmação".
 - `tests/test_licencas.py`: falha se alguma dependência instalada tiver licença fora da

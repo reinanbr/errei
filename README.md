@@ -441,7 +441,7 @@ errei caminho/artigo --online --lit-max 2 --lit-ano-min 2015 --lit-idioma pt,en
 | `--lit-max N` | máximo de fontes por afirmação (padrão 3; `[literatura] max_fontes`) |
 | `--lit-ano-min AAAA` | só fontes publicadas a partir desse ano |
 | `--lit-idioma pt,en` | só fontes nesses idiomas (ISO 639-1; padrão: todos) |
-| `--texto-completo` | compara também com trechos do PDF aberto, **só** com licença aberta (CC BY, CC0, CC BY-SA) |
+| `--texto-completo` | compara também com trechos do PDF aberto, **só** com licença aberta (CC BY, CC0, CC BY-SA; PDFs de outra licença nem são baixados). O trecho traz a página: `(p. 5)` |
 | `--skip literatura` | desliga o verificador |
 
 **Quais afirmações.** Frases que já citam uma obra e, na introdução/revisão, frases **sem
@@ -450,9 +450,15 @@ percentuais). Limite: `[literatura] max_afirmacoes` (padrão 15).
 
 **Como decide.**
 
-1. Consulta em português **e** em inglês (a tradução da consulta usa o tradutor local
-   opcional `errei[traducao]`; sem ele, só português, e o relatório avisa). A busca não é
-   restrita ao Brasil nem ao português.
+1. Consulta em português **e** em inglês. A tradução da consulta usa o tradutor local
+   opcional; sem ele, só português, e o relatório avisa. A busca não é restrita ao Brasil
+   nem ao português. Para instalar o tradutor (~310 MB, Apache-2.0, revisão fixa e sha256
+   conferido):
+
+   ```bash
+   pip install 'errei[traducao]'
+   errei modelo baixar --nome opus-mt-ROMANCE-en
+   ```
 2. Bases: **OpenAlex** (primária) e Semantic Scholar. Toda fonte é **confirmada** pelo DOI
    (Crossref/OpenAlex, com título conferido), pelo id do arXiv ou pelo registro do
    OpenAlex. O que não for confirmado é descartado e contado ("Fontes descartadas").

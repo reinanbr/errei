@@ -434,10 +434,10 @@ app.add_typer(modelo_app, name="modelo")
 def modelo_info() -> None:
     import json as _json
 
-    from errei import citecheck, resumocheck
+    from errei import citecheck, resumocheck, traducao
     from errei.modelo_dist import DESCRICAO
 
-    for mod in (citecheck, resumocheck):
+    for mod in (citecheck, resumocheck, traducao):
         d = mod.model_dir()
         reason = mod.unavailable_reason()
         nome_m = d.name if d.name in DESCRICAO else mod.MODEL_NAME
@@ -470,7 +470,9 @@ def modelo_info() -> None:
 NomeOpt = Annotated[
     str | None,
     typer.Option(
-        "--nome", help="errei-cita-v1, errei-cita-v2 ou errei-resumo-v1 (padrão: v1 e resumo)."
+        "--nome",
+        help="errei-cita-v1, errei-cita-v2, errei-resumo-v1 ou opus-mt-ROMANCE-en "
+        "(padrão: v1 e resumo).",
     ),
 ]
 

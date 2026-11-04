@@ -16,6 +16,21 @@ from typing import Any, Protocol
 MODEL_NAME = "opus-mt-ROMANCE-en"
 MODEL_REPO = "Helsinki-NLP/opus-mt-ROMANCE-en"
 MODEL_LICENSE = "Apache-2.0"
+# revisão fixa no Hugging Face (2023-08-16) e sha256 dos pesos (LFS), conferidos no download
+MODEL_REVISION = "e9ca9975e3972afd80732f08ce01d3a1339f47f8"
+MODEL_FILES = (
+    "config.json",
+    "generation_config.json",
+    "pytorch_model.bin",
+    "source.spm",
+    "target.spm",
+    "tokenizer_config.json",
+    "vocab.json",
+    "README.md",
+)
+MODEL_SHA256 = {
+    "pytorch_model.bin": "9d77bbbd43a214959e027ffc8713fbe31f8609d14827fba645f1361ca20a6f3a",
+}
 _lock = threading.Lock()
 _cache: dict[str, Any] = {}
 
@@ -42,8 +57,8 @@ def unavailable_reason() -> str | None:
         return "instale o extra: pip install 'errei[traducao]'"
     if not (model_dir() / "config.json").is_file():
         return (
-            f"tradutor {MODEL_NAME} não instalado em {model_dir()} (baixe {MODEL_REPO}, "
-            f"{MODEL_LICENSE}, para essa pasta)"
+            f"tradutor {MODEL_NAME} não instalado em {model_dir()} "
+            f"(errei modelo baixar --nome {MODEL_NAME})"
         )
     return None
 

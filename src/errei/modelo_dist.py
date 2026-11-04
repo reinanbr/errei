@@ -24,7 +24,7 @@ import tempfile
 from collections.abc import Callable
 from pathlib import Path
 
-from errei import citecheck, resumocheck
+from errei import citecheck, resumocheck, traducao
 
 MODELOS: dict[str, Callable[[], Path]] = {
     citecheck.MODEL_NAME: lambda: (
@@ -34,6 +34,7 @@ MODELOS: dict[str, Callable[[], Path]] = {
     ),
     citecheck.MODEL_V2: lambda: citecheck.dir_de(citecheck.MODEL_V2),
     resumocheck.MODEL_NAME: resumocheck.model_dir,
+    traducao.MODEL_NAME: traducao.model_dir,
 }
 # o que 'errei modelo baixar' sem --nome baixa (o v2 entra quando for publicado)
 PADRAO_BAIXAR = (citecheck.MODEL_NAME, resumocheck.MODEL_NAME)
@@ -41,6 +42,8 @@ DESCRICAO = {
     citecheck.MODEL_NAME: "atribuição de citações (frase do artigo × resumo da obra)",
     citecheck.MODEL_V2: "atribuição de citações, v2 (sem dados NC; frase × trecho do texto)",
     resumocheck.MODEL_NAME: "papel das frases do resumo: objetivo, método, resultados (NBR 6028)",
+    traducao.MODEL_NAME: f"tradutor pt→en da consulta do verificador literatura "
+    f"({traducao.MODEL_REPO}, {traducao.MODEL_LICENSE})",
 }
 MODELOS_TAG = os.environ.get("ERREI_MODELOS_TAG", "modelos")
 MODEL_NAME = citecheck.MODEL_NAME  # compatibilidade
@@ -95,6 +98,8 @@ def baixar(versao: str | None = None, *, force: bool = False, nome: str = MODEL_
         raise ModelDownloadError("requer o extra: pip install 'errei[online]'") from exc
     if nome not in MODELOS:
         raise ModelDownloadError(f"modelo desconhecido: {nome} (opções: {', '.join(MODELOS)})")
+    if nome == traducao.MODEL_NAME:
+        return baixar_tradutor(force=force)
     asset = f"{nome}.tar.gz"
     dest = MODELOS[nome]()
     if (dest / "config.json").is_file() and not force:
@@ -131,4 +136,40 @@ def baixar(versao: str | None = None, *, force: bool = False, nome: str = MODEL_
             shutil.rmtree(dest)
         dest.parent.mkdir(parents=True, exist_ok=True)
         shutil.copytree(found.parent, dest)
+    return dest
+
+
+HF_BASE = os.environ.get("ERREI_HF_URL", "https://huggingface.co").rstrip("/")
+
+
+def baixar_tradutor(*, force: bool = False) -> Path:
+    """Baixa o tradutor (Apache-2.0) do Hugging Face numa revisão fixa, conferindo o sha256."""
+    try:
+        import httpx
+    except ModuleNotFoundError as exc:
+        raise ModelDownloadError("requer o extra: pip install 'errei[online]'") from exc
+    dest = traducao.model_dir()
+    if (dest / "config.json").is_file() and not force:
+        raise ModelDownloadError(f"já instalado em {dest} (use --force)")
+    base = f"{HF_BASE}/{traducao.MODEL_REPO}/resolve/{traducao.MODEL_REVISION}"
+    with (
+        tempfile.TemporaryDirectory() as tmp,
+        httpx.Client(follow_redirects=True, timeout=120) as client,
+    ):
+        pasta = Path(tmp) / traducao.MODEL_NAME
+        pasta.mkdir()
+        for nome in traducao.MODEL_FILES:
+            r = client.get(f"{base}/{nome}")
+            if r.status_code != 200:
+                raise ModelDownloadError(f"{nome}: HTTP {r.status_code} em {base}")
+            if len(r.content) > MAX_BYTES:
+                raise ModelDownloadError(f"{nome}: grande demais")
+            esperado = traducao.MODEL_SHA256.get(nome)
+            if esperado and hashlib.sha256(r.content).hexdigest() != esperado:
+                raise ModelDownloadError(f"{nome}: checksum não confere")
+            (pasta / nome).write_bytes(r.content)
+        if dest.exists():
+            shutil.rmtree(dest)
+        dest.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copytree(pasta, dest)
     return dest

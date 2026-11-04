@@ -339,3 +339,85 @@ def test_cli_opcoes_lit(tmp_path: Path) -> None:
     assert cli(str(root), "--lit-idioma", "português").exit_code == 2
     assert cli(str(root), "--lit-ano-min", "18").exit_code == 2
     assert cli(str(root), "--skip", "literatura", "--format", "json").exit_code in (0, 1)
+
+
+PDF = (Path(__file__).parent / "fixtures" / "literatura" / "texto_aberto.pdf").read_bytes()
+PDF_URL = "https://oa.example.org/tele.pdf"
+
+
+class FakeCitaTexto(FakeCita):
+    def probs(self, pares: list[tuple[str, str]]) -> list[dict[str, float]]:
+        out = super().probs(pares)
+        for i, (_, trecho) in enumerate(pares):
+            if "increased treatment adherence" in trecho:
+                out[i] = {"sustenta": 0.9, "contradiz": 0.01, "neutro": 0.09}
+        return out
+
+
+def _tele_com_pdf(monkeypatch: pytest.MonkeyPatch, licenca: str) -> None:
+    import copy
+
+    fix = copy.deepcopy(FIX)
+    w = fix["openalex_busca"]["telemedicina"][0]
+    w["best_oa_location"] = {"license": licenca, "pdf_url": PDF_URL}
+    monkeypatch.setitem(FIX, "openalex_busca", fix["openalex_busca"])
+    monkeypatch.setattr(literatura, "_classificador", lambda: FakeCitaTexto())
+    monkeypatch.setattr(literatura, "_tradutor", lambda: FakeTradutor())
+
+
+@pytest.mark.parametrize("licenca", ["cc-by", "cc0"])
+def test_texto_completo_aberto_sustenta_com_pagina(
+    tmp_path: Path, respx_mock: respx.MockRouter, monkeypatch: pytest.MonkeyPatch, licenca: str
+) -> None:
+    router(respx_mock, [])
+    pdf = respx_mock.get(PDF_URL).mock(return_value=httpx.Response(200, content=PDF))
+    _tele_com_pdf(monkeypatch, licenca)
+    root = projeto(tmp_path)
+    sem = rodar(root)  # sem --texto-completo: só o resumo (pt) -> relacionada
+    assert pdf.call_count == 0
+    assert any("Souza" in " ".join(f.evidence) for f in by_code(sem.findings, "LIT-REL-001"))
+    rep = rodar(root, refs={"texto_completo": True})
+    assert pdf.call_count == 1
+    tele = [f for f in by_code(rep.findings, "LIT-SUG-001") if "Souza" in " ".join(f.evidence)]
+    assert len(tele) == 1
+    ev = "\n".join(tele[0].evidence)
+    assert (
+        'Trecho    : "Telemedicine increased treatment adherence in rural areas by 18 percent."'
+        "  (p. 2)" in ev
+    )
+    assert "Confiança: alta" in ev
+    # trecho em inglês para afirmação em português
+    assert any("Souza" in f.message for f in by_code(rep.findings, "LIT-LANG-001"))
+
+
+@pytest.mark.parametrize("licenca", ["", "other-oa", "cc-by-nc", "publisher-specific-oa"])
+def test_texto_completo_sem_licenca_aberta_nao_baixa(
+    tmp_path: Path, respx_mock: respx.MockRouter, monkeypatch: pytest.MonkeyPatch, licenca: str
+) -> None:
+    router(respx_mock, [])
+    pdf = respx_mock.get(PDF_URL).mock(return_value=httpx.Response(200, content=PDF))
+    _tele_com_pdf(monkeypatch, licenca)
+    rep = rodar(projeto(tmp_path), refs={"texto_completo": True})
+    assert pdf.call_count == 0  # PDF de licença fechada nunca é baixado
+    assert not any("Souza" in " ".join(f.evidence) for f in by_code(rep.findings, "LIT-SUG-001"))
+    assert any("Souza" in " ".join(f.evidence) for f in by_code(rep.findings, "LIT-REL-001"))
+
+
+def test_trecho_limitado_a_300_caracteres(
+    tmp_path: Path, respx_mock: respx.MockRouter, monkeypatch: pytest.MonkeyPatch, modelos: None
+) -> None:
+    import copy
+
+    fix = copy.deepcopy(FIX)
+    w = fix["openalex_busca"]["neurais"][0]
+    longa = "The use of neural networks reduces diagnostic time in hospitals " + "and " * 120
+    inv: dict[str, list[int]] = {}
+    for i, t in enumerate(longa.split()):
+        inv.setdefault(t, []).append(i)
+    w["abstract_inverted_index"] = inv
+    monkeypatch.setitem(FIX, "openalex_busca", fix["openalex_busca"])
+    router(respx_mock, [])
+    rep = rodar(projeto(tmp_path))
+    sug = by_code(rep.findings, "LIT-SUG-001")[0]
+    trecho = next(x for x in sug.evidence if x.startswith("Trecho")).split('"')[1]
+    assert len(trecho) <= 300 and trecho.endswith("…")
