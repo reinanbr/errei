@@ -47,6 +47,11 @@ seguem [SemVer](https://semver.org/lang/pt-BR/).
   todas as dependências; `language-tool-python` (extra `ptbr`) é GPL-3.0, aprovada pela OSI.
 - O `errei-cita-v2` sai de modelo-base MIT (`microsoft/mdeberta-v3-base`) e de dados sem
   cláusula NC, para retirar a restrição CC BY-NC dos pesos do v1.
+- `tests/test_licencas.py` passa a aceitar `BSL-1.0`, `CNRI-Python` e `CC0-1.0` (declaradas
+  em expressões compostas pelas versões novas de `torch`, `regex` e `numpy`), o nome
+  "Apache 2.0 License" (`transformers` 5.x) e trata `A WITH <exceção>` como a licença `A`.
+  Nenhuma dependência trocou de licença; `CC0-1.0` não é aprovada pela OSI, mas é domínio
+  público, livre e permite uso comercial.
 
 ## [0.6.0] - 2026-11-03
 

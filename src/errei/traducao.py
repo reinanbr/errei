@@ -11,7 +11,7 @@ from __future__ import annotations
 import os
 import threading
 from pathlib import Path
-from typing import Any, Protocol
+from typing import Any, Protocol, cast
 
 MODEL_NAME = "opus-mt-ROMANCE-en"
 MODEL_REPO = "Helsinki-NLP/opus-mt-ROMANCE-en"
@@ -70,7 +70,9 @@ class Marian:
 
         self._torch = torch
         self.tok = MarianTokenizer.from_pretrained(str(caminho))
-        self.model = MarianMTModel.from_pretrained(str(caminho)).eval()
+        # os tipos do transformers 5.x não fecham (eval sem tipo, generate com self duplo)
+        self.model = cast(Any, MarianMTModel.from_pretrained(str(caminho)))
+        self.model.eval()
 
     def traduzir(self, textos: list[str]) -> list[str]:
         if not textos:

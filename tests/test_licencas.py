@@ -33,6 +33,11 @@ APROVADAS = {
     "ZLIB",
     "HPND",
     "0BSD",
+    "BSL-1.0",
+    "CNRI-PYTHON",
+    # dedicação ao domínio público; não passa pela OSI, mas é livre (FSF) e permite uso
+    # comercial (aceita também para dados, regra D2.4); o numpy a usa em arquivos isolados
+    "CC0-1.0",
     # copyleft, mas aprovadas pela OSI (livres e gratuitas); só em extras opcionais
     "GPL-3.0-ONLY",
     "GPL-3.0-OR-LATER",
@@ -44,6 +49,7 @@ NOMES = {
     "mit license": "MIT",
     "apache 2.0": "APACHE-2.0",
     "apache-2.0": "APACHE-2.0",
+    "apache 2.0 license": "APACHE-2.0",
     "apache software license": "APACHE-2.0",
     "apache license 2.0": "APACHE-2.0",
     "apache license, version 2.0": "APACHE-2.0",
@@ -72,8 +78,13 @@ TEXTO_LONGO = re.compile(r"\b(BSD|MIT|Apache License)\b")
 SPDX = re.compile(r"^[A-Za-z0-9.+-]+(?:\s+(?:OR|AND|WITH)\s+[A-Za-z0-9.+-]+)*$")
 
 
+# "A WITH exceção": a exceção só acrescenta permissões; vale a licença A
+WITH_EXCECAO = re.compile(r"\s+WITH\s+[A-Za-z0-9.+-]+")
+
+
 def _spdx(expr: str) -> set[str]:
-    return {p.strip().upper() for p in re.split(r"\s+(?:OR|AND|WITH)\s+|[()]", expr) if p.strip()}
+    expr = WITH_EXCECAO.sub("", expr)
+    return {p.strip().upper() for p in re.split(r"\s+(?:OR|AND)\s+|[()]", expr) if p.strip()}
 
 
 def _licencas(dist: metadata.Distribution) -> set[str]:
