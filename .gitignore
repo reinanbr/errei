@@ -15,3 +15,6 @@ treino/modelos/
 /treino-gpu/dados/
 /treino-gpu/saida/
 /.venv-gpu/
+
+# o CI instala com uv pip install; o lock gerado pelo uv run não é versionado
+uv.lock
