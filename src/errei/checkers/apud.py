@@ -27,7 +27,7 @@ from __future__ import annotations
 import re
 from collections import defaultdict
 from collections.abc import Iterator
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from typing import TYPE_CHECKING, Any
 
 from errei.bib.fields import normalize_doi, valid_doi, year_of
@@ -55,6 +55,12 @@ ORIG_TXT = re.compile(
     r"\s*\)?\s*,?\s*$"
 )
 TXT_AUTOR = re.compile(r"[A-ZÀ-Ý][A-Za-zÀ-ÿ'’-]{2,}")  # sobrenome em "Flesch (1948)"
+_SOBRENOME = r"[A-ZÀ-Ý][A-Za-zÀ-ÿ'’-]+"
+# "apud Martins (1996)", "MARTINS; NUNES, 1996", "Martins, Ghiraldelo e Nunes (1996)"
+CONS_TXT = re.compile(
+    rf"\s*({_SOBRENOME}(?:(?:\s*[;,]\s*|\s+e\s+){_SOBRENOME})*(?:\s+et\s+al\.?)?)"
+    r"\s*[,(]?\s*((?:1[5-9]|20)\d\d[a-z]?)(?!\w)"
+)
 CLAIM_APUD = re.compile(r"\s*\b(?:apud|citad[oa]s?\s+por)\b(?:\s+o estudo)?", re.IGNORECASE)
 MAX_TRECHO = 300
 ROTULO = {
@@ -143,6 +149,17 @@ class Apud:
     pagina: str = ""  # página indicada na obra consultada
     cmd: Command | None = None  # comando de citação usado para achar a frase
     cmds: tuple[int, ...] = ()  # offsets dos comandos que compõem o apud
+    # entrada do .bib da obra digitada, pelo sobrenome e ano (ver ``ligar``); '' = nenhuma
+    original_ligada: str = ""
+    consultada_ligada: str = ""
+
+    @property
+    def chave_original(self) -> str:
+        return self.original or self.original_ligada
+
+    @property
+    def chave_consultada(self) -> str:
+        return self.consultada or self.consultada_ligada
 
     @property
     def rotulo(self) -> str:
@@ -348,8 +365,12 @@ def coletar(project: Project, style: str = "") -> list[Apud]:
                         )
                     )
             elif antes is not None:  # "\citeonline{flesch1948} apud Martins (1996)"
-                resto = _sem_latex(m[mt.end() : mt.end() + 60])
-                texto = re.split(r"[.;]\s", resto, maxsplit=1)[0][:40].strip(" ,")
+                resto = _sem_latex(m[mt.end() : mt.end() + 120])
+                cm = CONS_TXT.match(resto)
+                if cm:
+                    texto = f"{cm.group(1)} ({cm.group(2)})"
+                else:  # sem autor e ano reconhecíveis: o começo do texto digitado
+                    texto = re.split(r"[.;]\s", resto, maxsplit=1)[0][:40].strip(" ,")
                 for ok in okeys:
                     out.append(
                         Apud(
@@ -388,6 +409,46 @@ def _norm(s: str) -> str:
 
 def _ano(e: BibEntry | None) -> int | None:
     return year_of(e.get("year") or e.get("date")) if e is not None else None
+
+
+Indice = dict[tuple[str, int], list[str]]
+
+
+def _indice(by_key: dict[str, BibEntry]) -> Indice:
+    """Chaves do .bib pelo sobrenome do primeiro autor e pelo ano."""
+    idx: Indice = defaultdict(list)
+    for k, e in by_key.items():
+        autores = parse_authors(e.get("author") or e.get("editor"))
+        ano = _ano(e)
+        if autores and ano:
+            idx[(_norm(autores[0].last), ano)].append(k)
+    return idx
+
+
+def _chave_digitada(texto: str, idx: Indice) -> str:
+    """A entrada do .bib de uma obra digitada ("Martins (1996)"); '' se nenhuma ou mais de uma.
+
+    Com duas obras do mesmo autor no mesmo ano (1996a, 1996b), não dá para saber qual é:
+    melhor não ligar do que ligar à obra errada.
+    """
+    m = TXT_AUTOR.search(texto)
+    ano = year_of(texto)
+    chaves = idx.get((_norm(m.group(0)), ano), []) if m and ano else []
+    return chaves[0] if len(chaves) == 1 else ""
+
+
+def ligar(apuds: list[Apud], by_key: dict[str, BibEntry]) -> None:
+    """Liga a obra digitada ("Martins (1996) apud ...") à entrada do .bib de mesmo autor e ano.
+
+    Se ela cai na chave do outro lado ("Martins (1996) apud \\cite{martins1996}"), não liga:
+    é, provavelmente, outra obra do autor, fora do .bib.
+    """
+    idx = _indice(by_key)
+    for a in apuds:
+        o = "" if a.original else _chave_digitada(a.original_texto, idx)
+        c = "" if a.consultada else _chave_digitada(a.consultada_texto, idx)
+        a.original_ligada = "" if o and o == a.consultada else o
+        a.consultada_ligada = "" if c and c == a.original else c
 
 
 def _trecho(texto: Any, limite: int = MAX_TRECHO) -> str:
@@ -442,7 +503,8 @@ class ApudChecker(BaseChecker):
             "A citação de citação é para o texto a que você não teve acesso. Se a mesma obra "
             "é citada diretamente em outro ponto, ou você a leu (e pode citá-la diretamente "
             "também aqui) ou não leu (e a citação direta atribui a você uma leitura que não "
-            "fez).",
+            "fez). O mesmo vale quando ela é a obra consultada (a que você leu) em outra "
+            "citação de citação.",
             R10520,
         ),
         Rule(
@@ -557,6 +619,7 @@ class ApudChecker(BaseChecker):
         by_key: dict[str, BibEntry] = {}
         for e in project.bib_entries:
             by_key.setdefault(e.key, e)
+        ligar(apuds, by_key)
         out = self._offline(project, ctx, apuds, by_key)
         if ctx.http is None:
             out.append(
@@ -589,6 +652,13 @@ class ApudChecker(BaseChecker):
         for u in uses:
             if u.command.start not in apud_starts:
                 diretas[u.key].append(u)
+        # a obra consultada é a que você leu: dada como original noutro apud, contradiz.
+        # A digitada ("apud Martins (1996)") vale pela entrada do .bib de mesmo autor e ano.
+        lidas: dict[str, list[Apud]] = defaultdict(list)
+        ordem = {id(s): i for i, s in enumerate(project.tex)}
+        for a in sorted(apuds, key=lambda a: (ordem.get(id(a.source), 0), a.start)):
+            if a.chave_consultada and a.chave_consultada != a.chave_original:
+                lidas[a.chave_consultada].append(a)
         vistos: set[str] = set()
         lista: list[str] = []
         for a in apuds:
@@ -606,12 +676,13 @@ class ApudChecker(BaseChecker):
                 continue
             if a.forma == "digitado" and a.original and not a.consultada:
                 txt = f" ('{a.consultada_texto}')" if a.consultada_texto else ""
+                ck = a.consultada_ligada or "chave-da-obra-consultada"
                 out.append(
                     self.finding(
                         "APUD-CONS-001",
                         f"citação de citação de '{a.original}': a obra consultada{txt} está "
                         "digitada, fora do .bib",
-                        suggestion=f"\\apud{{{a.original}}}{{chave-da-obra-consultada}}",
+                        suggestion=f"\\apud{{{a.original}}}{{{ck}}}",
                         **kw,
                     )
                 )
@@ -632,23 +703,54 @@ class ApudChecker(BaseChecker):
                         **kw,
                     )
                 )
-            if not a.original or a.original in vistos:
+            o = a.chave_original
+            if not o or o in vistos:
                 continue
-            vistos.add(a.original)
-            d = diretas.get(a.original, [])
-            if d:
-                locs = []
-                for u in d[:5]:
-                    loc = u.source.location(u.offset)
-                    locs.append(f"citada diretamente em {loc.onde}")
+            d = diretas.get(o, [])
+            # um por ponto do texto (\apud{a,b}{c} rende dois Apud no mesmo lugar)
+            como_cons: dict[str, list[str]] = defaultdict(list)
+            for b in lidas.get(o, []):
+                orig = f"'{b.original}'" if b.original else b.original_texto or "?"
+                onde = b.source.location(b.start).onde
+                if b.consultada_ligada:
+                    onde += f" (digitada como {b.consultada_texto})"
+                como_cons[onde].append(orig)
+            if not a.original and not (d or como_cons):
+                continue  # digitada sem outro uso: um \apud{o}{...} adiante ainda vai à lista
+            vistos.add(o)
+            if d or como_cons:
+                locs = [f"citada diretamente em {u.source.location(u.offset).onde}" for u in d[:5]]
+                if a.original_ligada:
+                    locs.insert(
+                        0,
+                        f"a obra original, digitada como {a.original_texto}, é a entrada '{o}' "
+                        "do .bib (mesmo sobrenome do primeiro autor e ano)",
+                    )
+                for onde, origs in list(como_cons.items())[:5]:
+                    locs.append(
+                        f"obra consultada em {onde}, na citação de citação de {', '.join(origs)}"
+                    )
+                partes = [f"diretamente em {len(d)} outro(s) ponto(s)"] if d else []
+                if como_cons:
+                    partes.append(
+                        f"como obra consultada (a que você leu) em {len(como_cons)} outra(s) "
+                        "citação(ões) de citação"
+                    )
+                onde_mais = f" e {partes[0]}" if len(partes) == 1 else ", " + " e ".join(partes)
+                if como_cons:
+                    nao_leu = "ela não pode ser a obra consultada em outra citação de citação"
+                    nao_leu += " nem ser citada diretamente" if d else ""
+                else:
+                    nao_leu = "use o apud também nos outros pontos"
+                orig_a = f"'{a.original}'" if a.original else a.original_texto
+                cons = f"'{a.consultada}'" if a.consultada else a.consultada_texto or "'?'"
                 out.append(
                     self.finding(
                         "APUD-DIRETA-001",
-                        f"'{a.original}' é citada por intermédio de '{a.consultada or '?'}' "
-                        f"aqui e diretamente em {len(d)} outro(s) ponto(s)",
+                        f"{orig_a} é citada por intermédio de {cons} aqui{onde_mais}",
                         evidence=tuple(locs),
                         suggestion="se leu a original, cite-a diretamente também aqui; se não "
-                        "leu, use o apud também nos outros pontos",
+                        f"leu, {nao_leu}",
                         **kw,
                     )
                 )
@@ -669,7 +771,7 @@ class ApudChecker(BaseChecker):
                     "na lista (no abntex2cite, @hidden oculta a entrada)",
                 )
             )
-        out += self._excesso(ctx, apuds, uses, diretas, by_key)
+        out += self._excesso(ctx, apuds, uses, diretas, set(lidas))
         return out
 
     def _excesso(
@@ -678,28 +780,21 @@ class ApudChecker(BaseChecker):
         apuds: list[Apud],
         uses: list[CiteUse],
         diretas: dict[str, list[CiteUse]],
-        by_key: dict[str, BibEntry],
+        lidas: set[str],
     ) -> list[Finding]:
         min_oc = int(ctx.config.get("apud", "min_ocorrencias", 3) or 3)
         max_prop = float(ctx.config.get("apud", "max_proporcao", 0.15) or 0.15)
-        # "Flesch (1948)" digitado e a entrada flesch1948 do .bib são a mesma obra
-        por_autor_ano: dict[tuple[str, int], str] = {}
-        for k, e in by_key.items():
-            autores = parse_authors(e.get("author") or e.get("editor"))
-            if autores and _ano(e):
-                por_autor_ano.setdefault((_norm(autores[0].last), _ano(e) or 0), k)
 
-        def obra(a: Apud) -> str:
-            if a.original:
-                return a.original
-            m = TXT_AUTOR.search(a.original_texto)
-            ano = year_of(a.original_texto)
-            if m and ano and (_norm(m.group(0)), ano) in por_autor_ano:
-                return por_autor_ano[(_norm(m.group(0)), ano)]
-            return a.original_texto.lower()
+        def obra(a: Apud) -> str:  # "Flesch (1948)" digitado e flesch1948 são a mesma obra
+            return a.chave_original or a.original_texto.lower()
 
-        originais = {obra(a) for a in apuds if a.original or a.original_texto}
-        so_apud = {k for k in originais if not diretas.get(k)}
+        # \apud{x}{x} (APUD-MESMA-001) não diz qual obra foi lida: fica fora da conta
+        originais = {
+            obra(a)
+            for a in apuds
+            if (a.original or a.original_texto) and a.original != a.consultada
+        }
+        so_apud = {k for k in originais if not diretas.get(k) and k not in lidas}
         citadas = {u.key for u in uses} | originais
         prop = len(so_apud) / max(1, len(citadas))
         ctx.add_metrics(
@@ -720,7 +815,8 @@ class ApudChecker(BaseChecker):
                         f"{len(so_apud)} de {len(citadas)} ({prop:.0%})",
                         None,
                         f"referência usual: até {max_prop:.0%}",
-                        "obras originais que não são citadas diretamente em nenhum ponto",
+                        "obras originais que não são citadas diretamente nem usadas como obra "
+                        "consultada em nenhum ponto",
                     ),
                 ],
             )
@@ -878,8 +974,9 @@ class ApudChecker(BaseChecker):
         primeiro: dict[tuple[str, str], Apud] = {}
         for a in apuds:
             o = a.original or a.original_texto
-            if o and a.consultada and a.original != a.consultada:
-                primeiro.setdefault((o, a.consultada), a)
+            c = a.chave_consultada  # a digitada, pela entrada do .bib de mesmo autor e ano
+            if o and c and a.chave_original != c:
+                primeiro.setdefault((o, c), a)
         completo = bool(ctx.config.get("refs", "texto_completo", False))
         acesso: set[str] = set()
         for i, ((o, c), a) in enumerate(primeiro.items(), 1):
@@ -890,6 +987,7 @@ class ApudChecker(BaseChecker):
             if ec is None:
                 continue  # chave inexistente: o refs já aponta (REFS-CITE-001)
             cons = self._consultada(ctx, ec, memo)
+            n0 = len(out)
             if alvo is None:
                 contexto[(o, c)].append("a obra original digitada não traz autor e ano legíveis")
                 out.append(
@@ -915,6 +1013,15 @@ class ApudChecker(BaseChecker):
             )
             if completo and alvo is not None and cand_texto is not None:
                 out += self._texto(project, ctx, a, alvo, cand_texto, (o, c), contexto, kw)
+            if a.consultada_ligada:
+                nota = (
+                    f"obra consultada digitada como {a.consultada_texto}: conferida pela entrada "
+                    f"'{c}' do .bib (mesmo sobrenome do primeiro autor e ano)"
+                )
+                out[n0:] = [
+                    f if f.code == "APUD-ACESSO-001" else replace(f, evidence=(nota, *f.evidence))
+                    for f in out[n0:]
+                ]  # o acesso aberto é da original
         return out
 
     def _acesso(
@@ -1098,7 +1205,7 @@ class ApudChecker(BaseChecker):
         from errei.net.sources import norm
         from errei.net.textocompleto import texto_de
 
-        c = a.consultada
+        c = chave[1]
         ctx.progress(f"procurando '{alvo.rotulo}' no texto completo de {c}")
         tc = texto_de(ctx, cand_c)
         if tc is None:
@@ -1242,7 +1349,7 @@ class ApudChecker(BaseChecker):
                     fr,
                     by_key,
                     memo,
-                    contexto.get((a.original or a.original_texto, a.consultada), []),
+                    contexto.get((a.original or a.original_texto, a.chave_consultada), []),
                 ),
                 SCHEMA_APUD,
                 system=SYSTEM_APUD,
@@ -1352,9 +1459,8 @@ def _prompt(
     contexto: list[str],
 ) -> str:
     original = _ref_txt(a.original, a.original_texto, by_key.get(a.original), memo.get(a.original))
-    consultada = _ref_txt(
-        a.consultada, a.consultada_texto, by_key.get(a.consultada), memo.get(a.consultada)
-    )
+    c = a.chave_consultada  # a digitada vai com os dados da entrada do .bib de mesmo autor e ano
+    consultada = _ref_txt(c, a.consultada_texto, by_key.get(c), memo.get(c))
     achados = "; ".join(contexto) if contexto else "nada conclusivo"
     return (
         "Verifique esta citação de citação (apud). O autor do trabalho declara que leu a "

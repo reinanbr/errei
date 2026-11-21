@@ -55,8 +55,15 @@ seguem [SemVer](https://semver.org/lang/pt-BR/).
   (abntex2cite), `\apud[p]{o}[p]{c}` e `\textapud` (biblatex-abnt) e "apud"/"citado por"
   digitados entre citações. Sem rede: `APUD-ORDEM-001` (original posterior à consultada,
   com a ordem certa), `APUD-MESMA-001`, `APUD-DIRETA-001` (original também citada
-  diretamente), `APUD-CONS-001` (consultada fora do `.bib`), `APUD-EXCESSO-001` (`[apud]
-  max_proporcao`) e `APUD-LISTA-001`, além da métrica "Citação de citação (apud)". Com
+  diretamente ou usada como obra consultada em outro apud), `APUD-CONS-001` (consultada
+  fora do `.bib`, mostrada por autor e ano, como "Martins, Ghiraldelo e Nunes (1996)" ou
+  "MARTINS; NUNES (1996)"), `APUD-EXCESSO-001` (`[apud] max_proporcao`; a obra usada como
+  consultada em algum ponto e `\apud{x}{x}` não contam como citadas só por apud) e
+  `APUD-LISTA-001`, além da métrica "Citação de citação (apud)". A obra digitada, original
+  ou consultada, é ligada à entrada do `.bib` de mesmo sobrenome do primeiro autor e ano,
+  só quando há uma única (com 1996a e 1996b, ou com a chave do outro lado do apud, não
+  liga): conta no `APUD-DIRETA-001`, na métrica e na sugestão do `APUD-CONS-001`, e a
+  consultada digitada passa pela conferência com `--online` e `--ia-claude`. Com
   `--online`, sem IA: `APUD-ACESSO-001` (original em acesso aberto), `APUD-REDE-001`/`002`
   (a lista de referências da consultada inclui ou não a original, procurada no OpenAlex, no
   Crossref e no Semantic Scholar, por registro, DOI, título ou autor e ano) e

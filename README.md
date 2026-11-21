@@ -586,13 +586,23 @@ Em todas, a obra que você **não** leu vem primeiro e a que você leu vem depoi
 |---|---|
 | `APUD-ORDEM-001` | a original é posterior à consultada: os argumentos provavelmente estão invertidos (sugere a ordem certa) |
 | `APUD-MESMA-001` | a mesma chave como original e como consultada |
-| `APUD-DIRETA-001` | a original também é citada diretamente em outro ponto: ou você a leu, ou não leu |
-| `APUD-CONS-001` | a obra consultada está digitada, fora do `.bib` |
+| `APUD-DIRETA-001` | a original também é citada diretamente em outro ponto, ou é a obra consultada (a que você leu) em outra citação de citação: ou você a leu, ou não leu. Vale também para a original e a consultada digitadas (ver abaixo) |
+| `APUD-CONS-001` | a obra consultada está digitada, fora do `.bib` (com a chave na sugestão, quando a entrada é única pelo autor e ano) |
 | `APUD-EXCESSO-001` | muitas obras citadas só por intermédio de outra (`[apud] max_proporcao`, padrão 15%, a partir de `min_ocorrencias` = 3) |
 | `APUD-LISTA-001` | as originais vão para a lista de referências; confira se o seu programa pede só a consultada |
 
 A métrica "Citação de citação (apud)" mostra quantas são e quantas obras são citadas só
-por apud.
+por apud (nem diretamente nem como obra consultada em nenhum ponto; `\apud{x}{x}` fica fora
+da conta).
+
+**Obra digitada.** Em `Martins (1996) apud \citeonline{souza2020}` ou
+`\citeonline{flesch1948} apud Martins (1996)`, a obra digitada é ligada à entrada do `.bib`
+com o mesmo sobrenome do primeiro autor e o mesmo ano, e então conta como `martins1996` no
+`APUD-DIRETA-001`, na métrica, na sugestão do `APUD-CONS-001` e, quando é a consultada, na
+conferência com `--online` e com o Claude Code. Os achados dizem quando a ligação foi feita
+assim. Não há ligação quando duas entradas têm o mesmo autor e ano (1996a, 1996b), quando o
+ano traz letra, nem quando a entrada é a obra do outro lado do apud
+(`Martins (1996) apud \citeonline{martins1996}` é, provavelmente, outra obra de Martins).
 
 **Com `--online`**, sem IA, só com bases abertas:
 
@@ -623,8 +633,8 @@ fica identificada (título e DOI) e passa também pela conferência de acesso ab
 listas, o errei recorre à obra mais citada desse autor nesse ano no OpenAlex, e só a aceita
 quando ela tem pelo menos 10 vezes as citações da segunda: "Flesch 1948" são 12 obras no
 OpenAlex, de dois autores. Essa identificação aparece marcada como "só por autor e ano".
-Na contagem do excesso, "Flesch (1948)" digitado e a entrada `flesch1948` do `.bib` são a
-mesma obra.
+A consultada digitada ligada ao `.bib` é conferida como as demais, pelos dados da entrada,
+e os achados trazem a nota "conferida pela entrada ... do .bib".
 
 O Semantic Scholar sem chave tem limite de requisições compartilhado e costuma responder
 429. Quando isso acontece, o relatório diz que a base não respondeu, e não que a obra não

@@ -59,7 +59,9 @@ BY_CHECKER = {
     "obras antigas costumam faltar), então 'não cita' é um convite a conferir, não prova. "
     "Com --texto-completo, a obra original é procurada pelo sobrenome do primeiro autor no "
     "texto de acesso livre da obra consultada, o que falha com PDFs mal extraídos e grafias "
-    "diferentes. O errei não sabe se você leu a original: só aponta incoerências.",
+    "diferentes. Uma obra digitada ('Martins (1996)') é ligada ao .bib pelo sobrenome do "
+    "primeiro autor e pelo ano, só quando há uma única entrada assim: pode ser outra obra "
+    "do autor. O errei não sabe se você leu a original: só aponta incoerências.",
     "referencia": "A referência por área compara o manuscrito com quantis de uma amostra "
     "de obras de acesso aberto no top 10% de citações normalizadas do OpenAlex (a "
     "procedência, o n e a data aparecem na tabela). Citação mede impacto, não qualidade; a "

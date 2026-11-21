@@ -12,7 +12,7 @@ import httpx
 import pytest
 import respx
 
-from errei.checkers.apud import coletar, frase
+from errei.checkers.apud import coletar, frase, ligar
 from errei.config import Config
 from errei.net.client import HttpClient
 from errei.net.textocompleto import TextoCompleto
@@ -134,10 +134,193 @@ def test_original_citada_diretamente_e_lista(tmp_path: Path) -> None:
     assert lista[0].manual_review
 
 
-def test_consultada_digitada(tmp_path: Path) -> None:
-    root = projeto(tmp_path, "Como mostra \\citeonline{flesch1948} apud Martins (1996), sim.\n")
+@pytest.mark.parametrize(
+    ("depois", "esperado"),
+    [
+        ("Martins (1996), sim.", "Martins (1996)"),
+        ("Martins (1996) considera o tamanho das sentenças.", "Martins (1996)"),
+        ("MARTINS; GHIRALDELO, 1996, p. 3).", "MARTINS; GHIRALDELO (1996)"),
+        ("Martins, Ghiraldelo e Nunes (1996) também.", "Martins, Ghiraldelo e Nunes (1996)"),
+        ("Martins et al. (1996b), sim.", "Martins et al. (1996b)"),
+        ("um manual antigo. Fim.", "um manual antigo"),  # sem autor e ano: o começo
+    ],
+)
+def test_consultada_digitada(tmp_path: Path, depois: str, esperado: str) -> None:
+    root = projeto(tmp_path, f"Como mostra \\citeonline{{flesch1948}} apud {depois}\n")
     f = by_code(offline(root).findings, "APUD-CONS-001")
-    assert len(f) == 1 and "Martins (1996)" in f[0].message
+    assert len(f) == 1
+    assert f"a obra consultada ('{esperado}') está digitada" in f[0].message
+
+
+def test_original_lida_como_consultada_em_outro_apud(tmp_path: Path) -> None:
+    root = projeto(
+        tmp_path,
+        "Zero, Lima (2010) apud \\citeonline{martins1996}.\n\n"
+        "Um \\apud{flesch1948}{martins1996}.\n\nDois \\apud{flesch1948}{martins1996}.\n\n"
+        "Três \\apud{martins1996}{souza2020}.\n\nQuatro \\cite{lima2010}.\n",
+    )
+    rep = offline(root)
+    direta = by_code(rep.findings, "APUD-DIRETA-001")
+    # Lima (2010), digitada, é lima2010, citada diretamente em "Quatro"
+    assert [x.message.split(" é ")[0] for x in direta] == ["Lima (2010)", "'martins1996'"]
+    f = direta[1]
+    assert f.message == (
+        "'martins1996' é citada por intermédio de 'souza2020' aqui e como obra consultada "
+        "(a que você leu) em 3 outra(s) citação(ões) de citação"
+    )
+    assert f.location is not None and f.location.line == 7
+    # na ordem do texto, com a original digitada como foi escrita
+    assert f.evidence == (
+        "obra consultada em texto.tex:1, na citação de citação de Lima (2010)",
+        "obra consultada em texto.tex:3, na citação de citação de 'flesch1948'",
+        "obra consultada em texto.tex:5, na citação de citação de 'flesch1948'",
+    )
+    assert f.suggestion is not None and "não pode ser a obra consultada" in f.suggestion
+    # martins1996 entra na lista como obra consultada: só flesch1948 vai como original
+    lista = by_code(rep.findings, "APUD-LISTA-001")
+    assert len(lista) == 1 and lista[0].message.endswith(": 'flesch1948'")
+    # e não conta como obra citada só por apud
+    grupo = next(g for g in rep.metrics if g.checker == "apud")
+    assert grupo.metrics[1].value == "1 de 4 (25%)"
+
+
+def test_original_citada_diretamente_e_lida_como_consultada(tmp_path: Path) -> None:
+    root = projeto(
+        tmp_path,
+        "Um \\apud{flesch1948,lima2010}{martins1996}.\n\n"
+        "Dois \\apud{martins1996}{souza2020}.\n\nTrês \\cite{martins1996}.\n",
+    )
+    direta = [
+        f
+        for f in by_code(offline(root).findings, "APUD-DIRETA-001")
+        if "'martins1996' é" in f.message
+    ]
+    assert len(direta) == 1
+    assert direta[0].message.endswith(
+        "aqui, diretamente em 1 outro(s) ponto(s) e como obra consultada (a que você leu) em "
+        "1 outra(s) citação(ões) de citação"
+    )
+    # \apud{a,b}{c} é um ponto só do texto, não dois
+    assert direta[0].evidence == (
+        "citada diretamente em texto.tex:5",
+        "obra consultada em texto.tex:1, na citação de citação de 'flesch1948', 'lima2010'",
+    )
+    assert direta[0].suggestion is not None
+    assert direta[0].suggestion.endswith("nem ser citada diretamente")
+
+
+def test_direta_com_consultada_digitada(tmp_path: Path) -> None:
+    root = projeto(
+        tmp_path,
+        "Um \\citeonline{flesch1948} apud Martins (1996), sim.\n\nDois \\cite{flesch1948}.\n",
+    )
+    direta = by_code(offline(root).findings, "APUD-DIRETA-001")
+    assert len(direta) == 1
+    assert direta[0].message == (
+        "'flesch1948' é citada por intermédio de Martins (1996) aqui e diretamente em 1 "
+        "outro(s) ponto(s)"
+    )
+
+
+def test_original_lida_como_consultada_digitada(tmp_path: Path) -> None:
+    root = projeto(
+        tmp_path,
+        "Um \\citeonline{flesch1948} apud Martins (1996), sim.\n\n"
+        "Dois \\apud{martins1996}{souza2020}.\n",
+    )
+    rep = offline(root)
+    direta = by_code(rep.findings, "APUD-DIRETA-001")
+    assert len(direta) == 1
+    assert direta[0].message == (
+        "'martins1996' é citada por intermédio de 'souza2020' aqui e como obra consultada "
+        "(a que você leu) em 1 outra(s) citação(ões) de citação"
+    )
+    assert direta[0].evidence == (
+        "obra consultada em texto.tex:1 (digitada como Martins (1996)), na citação de "
+        "citação de 'flesch1948'",
+    )
+    # a consultada digitada tem entrada no .bib: a sugestão já traz a chave
+    cons = by_code(rep.findings, "APUD-CONS-001")
+    assert len(cons) == 1 and cons[0].suggestion == "\\apud{flesch1948}{martins1996}"
+    grupo = next(g for g in rep.metrics if g.checker == "apud")
+    assert grupo.metrics[1].value == "1 de 3 (33%)"  # só flesch1948
+
+
+MARTINS_B = (  # outra obra de Martins em 1996: "Martins (1996)" fica ambígua
+    "@book{martins1996b, author={Martins, Ana}, title={Outro livro}, publisher={X}, year={1996}}\n"
+)
+
+
+def test_consultada_digitada_ambigua_nao_e_ligada(tmp_path: Path) -> None:
+    root = projeto(
+        tmp_path,
+        "Um \\citeonline{flesch1948} apud Martins (1996), sim.\n\n"
+        "Dois \\apud{martins1996}{souza2020}.\n",
+        bib=BIB + MARTINS_B,
+    )
+    rep = offline(root)
+    assert not by_code(rep.findings, "APUD-DIRETA-001")
+    cons = by_code(rep.findings, "APUD-CONS-001")
+    assert cons[0].suggestion == "\\apud{flesch1948}{chave-da-obra-consultada}"
+
+
+def test_original_digitada_tambem_citada_diretamente(tmp_path: Path) -> None:
+    root = projeto(
+        tmp_path,
+        "Um, segundo Martins (1996) apud \\citeonline{souza2020}, sim.\n\n"
+        "Dois \\cite{martins1996}.\n",
+    )
+    direta = by_code(offline(root).findings, "APUD-DIRETA-001")
+    assert len(direta) == 1
+    assert direta[0].message == (
+        "Martins (1996) é citada por intermédio de 'souza2020' aqui e diretamente em 1 "
+        "outro(s) ponto(s)"
+    )
+    assert direta[0].evidence == (
+        "a obra original, digitada como Martins (1996), é a entrada 'martins1996' do .bib "
+        "(mesmo sobrenome do primeiro autor e ano)",
+        "citada diretamente em texto.tex:3",
+    )
+
+
+def test_original_digitada_sem_outro_uso_nao_tira_a_chave_da_lista(tmp_path: Path) -> None:
+    root = projeto(
+        tmp_path,
+        "Um, segundo Martins (1996) apud \\citeonline{souza2020}, sim.\n\n"
+        "Dois \\apud{martins1996}{souza2020}.\n",
+    )
+    rep = offline(root)
+    assert not by_code(rep.findings, "APUD-DIRETA-001")
+    lista = by_code(rep.findings, "APUD-LISTA-001")
+    assert len(lista) == 1 and lista[0].message.endswith(": 'martins1996'")
+
+
+def test_ligar_nao_usa_a_chave_do_outro_lado(tmp_path: Path) -> None:
+    root = projeto(
+        tmp_path,
+        "Um, segundo Martins (1996) apud \\citeonline{martins1996}, sim.\n\n"
+        "Dois \\citeonline{flesch1948} apud Flesch (1948), sim.\n\n"
+        "Três, segundo Lima (2010) apud \\citeonline{souza2020}, sim.\n",
+    )
+    p = load_project(root)
+    apuds = coletar(p)
+    ligar(apuds, {e.key: e for e in p.bib_entries})
+    got = [(a.original_ligada, a.consultada_ligada) for a in apuds]
+    # outra obra do mesmo autor e ano, fora do .bib: não é ligada à chave do outro lado
+    assert got == [("", ""), ("", ""), ("lima2010", "")]
+    rep = offline(root)
+    assert not by_code(rep.findings, "APUD-MESMA-001")
+    assert not by_code(rep.findings, "APUD-DIRETA-001")
+
+
+def test_excesso_ignora_a_mesma_obra_nos_dois_lados(tmp_path: Path) -> None:
+    root = projeto(
+        tmp_path,
+        "Um \\apud{martins1996}{martins1996}.\n\nDois \\apud{flesch1948}{souza2020}.\n\n"
+        "Três \\apud{lima2010}{souza2020}.\n",
+    )
+    grupo = next(g for g in offline(root).metrics if g.checker == "apud")
+    assert grupo.metrics[1].value == "2 de 4 (50%)"
 
 
 def test_excesso_de_apud(tmp_path: Path) -> None:
@@ -372,6 +555,48 @@ def test_online_original_digitada_identificada_na_lista(
     # identificada, a original passa pela conferência de acesso aberto
     acesso = by_code(rep.findings, "APUD-ACESSO-001")
     assert len(acesso) == 1 and "cadastre-a no .bib" in (acesso[0].suggestion or "")
+
+
+CONS_DIGITADA = "A legibilidade é estimada \\citeonline{flesch1948} apud Martins (1996), sim.\n"
+NOTA_CONS = (
+    "obra consultada digitada como Martins (1996): conferida pela entrada 'martins1996' do "
+    ".bib (mesmo sobrenome do primeiro autor e ano)"
+)
+
+
+def test_online_consultada_digitada_ligada_ao_bib(
+    tmp_path: Path, respx_mock: respx.MockRouter
+) -> None:
+    rotas(respx_mock)
+    rep = online(projeto(tmp_path, CONS_DIGITADA))
+    rede = by_code(rep.findings, "APUD-REDE-001")
+    assert len(rede) == 1 and "'martins1996' cita 'flesch1948'" in rede[0].message
+    assert rede[0].evidence[0] == NOTA_CONS
+    # o acesso aberto é da original: não leva a nota da consultada
+    acesso = by_code(rep.findings, "APUD-ACESSO-001")
+    assert len(acesso) == 1 and NOTA_CONS not in acesso[0].evidence
+
+
+def test_online_consultada_digitada_ambigua_fica_de_fora(
+    tmp_path: Path, respx_mock: respx.MockRouter
+) -> None:
+    rotas(respx_mock)
+    rep = online(projeto(tmp_path, CONS_DIGITADA, bib=BIB + MARTINS_B))
+    assert not by_code(rep.findings, "APUD-REDE-001")
+    assert not by_code(rep.findings, "APUD-VERIF-001")
+
+
+def test_claude_code_recebe_a_consultada_digitada_pelo_bib(
+    tmp_path: Path, respx_mock: respx.MockRouter
+) -> None:
+    rotas(respx_mock)
+    exe = fake_claude(tmp_path)
+    online(projeto(tmp_path, CONS_DIGITADA), ia_claude={"enabled": True, "comando": str(exe)})
+    (c,) = chamadas(exe)
+    assert "OBRA CONSULTADA (lida pelo autor): Martins, Teresa B. F." in c["stdin"]
+    assert "Readability formulas applied to textbooks" in c["stdin"]
+    # o que as bases abertas acharam da consultada também vai junto
+    assert "a lista de referências da consultada inclui a original" in c["stdin"]
 
 
 @pytest.mark.parametrize(("citacoes", "identifica"), [((6677, 40), True), ((90, 40), False)])
