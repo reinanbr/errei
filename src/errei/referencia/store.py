@@ -14,8 +14,9 @@ def pasta() -> Path:
     env = os.environ.get("ERREI_REFERENCIA_DIR")
     if env:
         return Path(env).expanduser()
-    base = os.environ.get("XDG_DATA_HOME") or str(Path.home() / ".local" / "share")
-    return Path(base) / "errei" / "referencias"
+    from errei.paths import data_dir
+
+    return data_dir() / "referencias"
 
 
 def arquivo(slug: str) -> Path:

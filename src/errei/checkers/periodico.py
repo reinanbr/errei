@@ -359,7 +359,7 @@ class PeriodicoChecker(BaseChecker):
         escrita = 20 * (1 - _lin(dens, 0, 15))
         comps.append(
             (
-                "Escrita e LaTeX",
+                "Escrita e LaTeX" if getattr(project, "formato", "latex") == "latex" else "Escrita",
                 escrita,
                 20,
                 f"{wr_e} erro(s), {wr_w} aviso(s); densidade ponderada {dens:.1f}/1000 palavras",

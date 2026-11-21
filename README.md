@@ -1,7 +1,7 @@
 # errei
 
 **errei** audita um artigo científico escrito em LaTeX (arquivos `.tex` e `.bib` de uma
-pasta) e aponta problemas de **estrutura LaTeX, citações e referências, normas ABNT,
+pasta), no Word/LibreOffice (`.docx`) ou já em PDF, e aponta problemas de **estrutura LaTeX, citações e referências, normas ABNT,
 ortografia/gramática/estilo em pt-BR, qualidade textual, similaridade, indícios de texto
 gerado por IA e prontidão para periódicos**. Mostra o **nível de qualidade** que o trabalho
 já atinge (TCC, Mestrado, Doutorado ou Excelência) e gera uma **lista de afazeres** em
@@ -14,7 +14,7 @@ Princípios:
 - **Offline por padrão.** Nada sai da máquina sem `--online`. O LanguageTool roda localmente.
 - **Somente leitura.** Os arquivos do artigo nunca são alterados; não há autofix.
 - **Rastreável.** Cada achado tem arquivo, linha, coluna, trecho, código da regra,
-  severidade, mensagem e sugestão.
+  severidade, mensagem e sugestão (no `.docx`, o nº do parágrafo; no PDF, a página).
 
 ## Instalação
 
@@ -40,10 +40,11 @@ Extras opcionais (instale só o que precisar):
 | `errei[online]` | `httpx` + `rapidfuzz`: verificação de referências, busca de frases, OpenAlex |
 | `errei[ptbr]` | `language-tool-python` + `pyspellchecker`: gramática (LanguageTool local, requer Java ≥ 17) e ortografia de fallback |
 | `errei[plagio]` | `pypdf`: PDFs no corpus local de comparação |
+| `errei[documentos]` | `pypdf`: auditar um trabalho em `.pdf` (o `.docx` não precisa de extra) |
 | `errei[pdf]` | `reportlab`: relatório em PDF (`--pdf`, `--format pdf`) |
 | `errei[modelo]` | `torch` + `transformers`: modelo **errei-cita** de validação de citações |
 | `errei[traducao]` | `torch` + `transformers` + `sentencepiece`: tradutor local pt→en (`Helsinki-NLP/opus-mt-ROMANCE-en`, Apache-2.0) para a consulta em inglês do verificador `literatura` |
-| `errei[all]` | online, ptbr, plagio e pdf (o modelo é separado por ser grande) |
+| `errei[all]` | online, ptbr, plagio, pdf e documentos (o modelo é separado por ser grande) |
 
 Sem um extra, o verificador correspondente é pulado em parte, e o relatório informa isso
 com a regra `CORE-DEP-001`.
@@ -53,6 +54,8 @@ com a regra `CORE-DEP-001`.
 ```bash
 errei .                              # audita a pasta atual
 errei caminho/artigo                 # audita outra pasta
+errei trabalho.docx                  # audita um .docx (Word, LibreOffice, Google Docs)
+errei artigo.pdf                     # audita um PDF com texto (não digitalizado)
 errei . --online                     # habilita checagens que usam rede
 errei . --only abnt,refs             # roda só alguns verificadores (--skip para pular)
 errei . --format md --out relatorio.md
@@ -64,6 +67,7 @@ errei . --resumo                     # na tela, só o nível de qualidade, probl
 errei . --todo afazeres.md --nivel mestrado  # lista de tarefas para chegar ao nível
 errei . --format pdf --out rel.pdf   # PDF como saída principal (resumo na tela)
 errei . --online --texto-completo    # lê o texto completo (acesso livre) para validar as citações
+errei . --online --ia-claude         # confere também cada apud com o Claude Code (opcional)
 errei modelo info                    # estado e métricas do modelo de citações errei-cita
 errei init                           # cria .errei.toml comentado na pasta
 errei doctor                         # verifica dependências (java, LanguageTool, hunspell)
@@ -119,6 +123,48 @@ problemas** e as **possíveis melhorias** com `arquivo:linha` e a sugestão de c
 
 O quadro usa as metas da [lista de afazeres](#lista-de-afazeres-por-nível); é uma
 referência objetiva e não prevê aprovação nem aceite.
+
+## Trabalhos em .docx e .pdf
+
+Além do projeto LaTeX, o errei audita um arquivo `.docx` (Word, LibreOffice, Google Docs
+exportado) ou um `.pdf` com texto. O arquivo é lido e convertido em memória, sem ser
+alterado, e passa pelos mesmos verificadores: escrita, pt-BR, ABNT, citações e referências,
+apud, similaridade, indícios de IA, completude e prontidão (o `latex` é pulado).
+
+```bash
+errei trabalho.docx
+errei artigo.pdf --online --pdf relatorio.pdf
+errei pasta/                 # sem .tex na pasta e com um único .docx/.pdf: audita esse
+```
+
+O que é reconhecido:
+
+- **Estrutura.** Títulos pelos estilos do Word (Título 1, 2…, "Heading N", nível de tópico)
+  ou, no PDF, pela numeração ("2.1 Método"), por maiúsculas e pelos nomes usuais (Resumo,
+  Abstract, Introdução, Referências…); listas, citações recuadas, legendas e "Fonte:".
+- **Citações** digitadas: `(SILVA, 2020, p. 3)`, `Silva (2020)`, `Silva et al. (2020)`,
+  `(SILVA, 2020 apud SOUZA, 2021)`, `Silva (2020 apud SOUZA, 2021)`, APA
+  (`(Silva & Souza, 2020)`) e numéricas (`[1]`, `[2-4]`) quando a lista é numerada.
+- **Lista de referências** em ABNT (NBR 6023), APA, Chicago autor-data, IEEE e Vancouver,
+  inclusive entidades ("BRASIL. Ministério…") e "______." para autor repetido. Cada
+  citação é ligada à sua referência por autor e ano.
+- **Formatação** (só `.docx`): papel, margens e fonte padrão.
+
+Os achados se adaptam: a localização é `trabalho.docx, § 12` (nº do parágrafo, sem contar
+os vazios) ou `artigo.pdf, p. 3`; as obras aparecem como são citadas ("SILVA, 2020"), não
+como chaves do `.bib`; não há sugestões em LaTeX; e regras que só fazem sentido no `.bib`
+(campos obrigatórios, sintaxe) não se aplicam, porque os campos de uma referência digitada
+nem sempre podem ser separados com segurança. Regras próprias: `DOC-LEITURA-001` (o que foi
+lido e o que não é analisado), `DOC-LEITURA-002` (limitações da extração do PDF),
+`DOC-REF-001` (referência sem autor, título ou ano reconhecíveis), `DOC-REF-002` (lista
+autor-data fora da ordem alfabética) e `DOC-CIT-001` (`??` no PDF: citação ou referência
+cruzada que o LaTeX não resolveu).
+
+Não são analisados: notas de rodapé, caixas de texto, tabelas, equações, comentários,
+cabeçalhos e rodapés (no PDF, os repetidos e os números de página são removidos). PDFs
+digitalizados (imagem) não têm texto e são recusados com uma explicação (não há OCR).
+Sempre que possível, prefira o `.docx` ou o fonte LaTeX ao PDF: a extração do PDF pode colar
+palavras de linhas justificadas ou misturar colunas.
 
 ## Validação de citações
 
@@ -289,7 +335,7 @@ crie uma chave gratuita e use `OPENALEX_API_KEY` ou `[openalex] api_key` em
 ## Cache das consultas online
 
 Com `--online`, as respostas das bases (Crossref, OpenAlex, Semantic Scholar, arXiv, Open
-Library, Google Books, Gemini) ficam guardadas em `~/.cache/errei` (ou
+Library, Google Books, Gemini, Claude Code) ficam guardadas em `~/.cache/errei` (ou
 `$XDG_CACHE_HOME/errei`). Assim a segunda auditoria do mesmo artigo é rápida, não estoura
 os limites de requisição das APIs e dá o mesmo resultado para a mesma referência.
 
@@ -314,8 +360,8 @@ errei . --online --sem-cache   # ignora o cache nesta execução e grava as resp
 Ordem de precedência: padrões ← `~/.config/errei/config.toml` ← `<artigo>/.errei.toml` ←
 flags da linha de comando. Rode `errei init` para gerar um arquivo comentado.
 
-> Segurança: opções que carregam código (como `[ia].detector`) só são aceitas do config do
-> usuário ou da linha de comando, **nunca** do `.errei.toml` da pasta do artigo, que pode vir
+> Segurança: opções que carregam código ou enviam o texto para fora (como `[ia].detector`,
+> `[ia_online]` e `[ia_claude]`) só são aceitas do config do usuário ou da linha de comando, **nunca** do `.errei.toml` da pasta do artigo, que pode vir
 > de terceiros. O conteúdo do artigo nunca é executado nem passado a `latex` ou ao shell.
 
 ## Lista de afazeres por nível
@@ -376,8 +422,8 @@ Todo relatório informa em que se apoiou:
   - verificadores executados;
   - normas ABNT usadas;
   - fontes consultadas de fato ("nenhuma" quando a execução é offline);
-  - modelos (errei-cita, errei-resumo e, se usado, o Gemini; senão "IA online: não
-    utilizada");
+  - modelos (errei-cita, errei-resumo e, se usados, o Gemini e o Claude Code; senão "IA
+    online: não utilizada");
   - métodos, como o Flesch adaptado de Martins et al. (1996), MinHash e os pesos do índice;
   - o CSV do Qualis, quando houver.
 
@@ -520,6 +566,124 @@ qualquer tradução é automática e não é citação. Sem `--online`, o verifi
 nenhuma requisição** e o relatório diz que foi pulado (`CORE-NET-001`). Nada é escrito
 no `.tex` nem no `.bib`.
 
+## Citação de citação (apud)
+
+A citação de citação (`apud`, "citado por") declara que você leu a obra **consultada** e
+que ela cita a obra **original**, que você não leu (NBR 10520). O verificador `apud`
+reconhece estas formas:
+
+| forma | exemplo |
+|---|---|
+| abntex2cite | `\apud[p.~12]{flesch1948}{martins1996}`, `\apudonline{...}{...}` |
+| biblatex-abnt | `\apud[p.~3]{flesch1948}[p.~12]{martins1996}`, `\textapud{...}{...}` |
+| digitada | `\citeonline{flesch1948} apud \citeonline{martins1996}`, `Flesch (1948) apud \citeonline{martins1996}`, "citado por" |
+
+Em todas, a obra que você **não** leu vem primeiro e a que você leu vem depois.
+
+**Sem rede:**
+
+| regra | o que aponta |
+|---|---|
+| `APUD-ORDEM-001` | a original é posterior à consultada: os argumentos provavelmente estão invertidos (sugere a ordem certa) |
+| `APUD-MESMA-001` | a mesma chave como original e como consultada |
+| `APUD-DIRETA-001` | a original também é citada diretamente em outro ponto: ou você a leu, ou não leu |
+| `APUD-CONS-001` | a obra consultada está digitada, fora do `.bib` |
+| `APUD-EXCESSO-001` | muitas obras citadas só por intermédio de outra (`[apud] max_proporcao`, padrão 15%, a partir de `min_ocorrencias` = 3) |
+| `APUD-LISTA-001` | as originais vão para a lista de referências; confira se o seu programa pede só a consultada |
+
+A métrica "Citação de citação (apud)" mostra quantas são e quantas obras são citadas só
+por apud.
+
+**Com `--online`**, sem IA, só com bases abertas:
+
+| regra | o que aponta |
+|---|---|
+| `APUD-ACESSO-001` | a original tem cópia de acesso livre: leia-a e cite-a diretamente |
+| `APUD-REDE-001` / `APUD-REDE-002` | a lista de referências da consultada inclui (ou não inclui) a original, e em qual base |
+| `APUD-VERIF-001` | não deu para conferir (obra não localizada, base fora do ar ou lista de referências não indexada) |
+| `APUD-TEXTO-001` / `002` / `003` | com `--texto-completo`: o texto aberto da consultada menciona a original (pelo sobrenome do primeiro autor) num trecho que sustenta a frase (errei-cita), menciona sem sustentar, ou não menciona |
+
+A lista de referências da obra consultada é procurada em três bases, nesta ordem, e a busca
+para na primeira em que a original aparece:
+
+1. **OpenAlex** (`referenced_works`);
+2. **Crossref**, quando a consultada tem DOI (as listas depositadas pelas editoras, abertas
+   desde 2022);
+3. **Semantic Scholar**, pelo DOI ou pela busca do título.
+
+A original é reconhecida, nesta ordem de força, pelo registro do OpenAlex, pelo DOI, pelo
+título (também dentro da referência como impressa) ou pelo sobrenome do primeiro autor e
+ano. Uma referência do mesmo autor e ano com outro título não conta. O achado diz em que
+base e por qual critério casou, e a confiança do `APUD-REDE-002` sobe quando mais de uma
+lista foi conferida.
+
+**Original só digitada**, como `Flesch (1948) apud \citeonline{martins1996}`: o errei a
+procura pelo autor e ano na própria lista de referências da obra consultada. Achando, ela
+fica identificada (título e DOI) e passa também pela conferência de acesso aberto. Fora das
+listas, o errei recorre à obra mais citada desse autor nesse ano no OpenAlex, e só a aceita
+quando ela tem pelo menos 10 vezes as citações da segunda: "Flesch 1948" são 12 obras no
+OpenAlex, de dois autores. Essa identificação aparece marcada como "só por autor e ano".
+Na contagem do excesso, "Flesch (1948)" digitado e a entrada `flesch1948` do `.bib` são a
+mesma obra.
+
+O Semantic Scholar sem chave tem limite de requisições compartilhado e costuma responder
+429. Quando isso acontece, o relatório diz que a base não respondeu, e não que a obra não
+foi localizada.
+
+Sem `--online`, nada sai da máquina e o relatório avisa que a conferência online foi
+pulada (`CORE-NET-001`). A frase × obra original continua sendo validada pelo `refs`
+(`REFS-ATRIB-*`), como em qualquer citação.
+
+### Conferência com o Claude Code (opcional)
+
+Se você usa o Claude Code (CLI `claude`), pode pedir que ele também confira cada citação
+de citação na web:
+
+```bash
+errei . --online --ia-claude                            # modelo padrão: haiku
+errei . --online --ia-claude --ia-claude-modelo sonnet
+```
+
+O Claude Code **não é a opção nativa**: fica desligado por padrão, não é necessário para
+nenhuma verificação e nunca é o primeiro recurso. O errei faz tudo com o fonte e com bases
+abertas, e o Claude Code só acrescenta o achado `APUD-IA-001`. Esse achado diz se a obra
+consultada cita a original, se atribui a ela a ideia da frase e se a original está
+acessível, com os links e os trechos que a IA diz ter lido.
+
+Regras garantidas no código:
+
+- **Ligar é explícito.** Só com `--online --ia-claude` ou com `[ia_claude] enabled = true`
+  em `~/.config/errei/config.toml`. O `.errei.toml` do artigo não liga isso nem escolhe o
+  executável.
+- **Sessão isolada.** O `claude -p` roda numa pasta temporária vazia, sem ver os arquivos do
+  trabalho, só com as ferramentas WebSearch e WebFetch. Não carrega servidores MCP, hooks,
+  plugins, skills nem CLAUDE.md (`--safe-mode`) e não pede permissões: o que pediria é
+  negado. A sessão não é gravada, e o tempo e o orçamento de cada consulta são limitados.
+- **Envio mínimo.** São enviados a frase da citação de citação, os metadados das duas obras
+  (autores, ano, título, veículo, DOI) e o que as bases abertas já mostraram. O relatório
+  registra o que foi enviado, o número de chamadas e o custo (`meta.ia_claude`).
+- **A IA não escreve o trabalho nem decide.** A resposta segue um esquema JSON fixo. A
+  justificativa é cortada em 25 palavras, cada trecho em 300 caracteres, e só links
+  `http(s)` são aceitos. Os trechos e links da IA **não são conferidos pelo errei** e
+  aparecem marcados assim. O achado é sempre `info`.
+- **Cache.** As respostas ficam no `http.sqlite` por 30 dias; `--sem-cache` pergunta de
+  novo. Cada execução faz no máximo `max_consultas` consultas.
+
+```toml
+# ~/.config/errei/config.toml
+[ia_claude]
+enabled = false        # true liga sem --ia-claude (ainda exige --online)
+modelo = "haiku"
+comando = ""           # caminho do claude, se não estiver no PATH
+max_consultas = 10
+orcamento_usd = 0.5    # por consulta
+timeout = 300          # segundos por consulta
+```
+
+O Claude Code é um programa da Anthropic, fechado e com uso cobrado na sua conta. Por isso
+ele é só um complemento opcional e não uma dependência do errei. `errei doctor` mostra se
+ele está instalado.
+
 ## Verificadores
 
 Cada verificador é um plugin descoberto pelo grupo de entry points `errei.checkers`
@@ -527,6 +691,7 @@ Cada verificador é um plugin descoberto pelo grupo de entry points `errei.check
 
 | verificador | o que faz |
 |---|---|
+| `documento` | só em `.docx`/`.pdf`: o que foi lido, referências não reconhecidas, ordem alfabética da lista e `??` não resolvidos no PDF |
 | `latex` | resolve `\input`/`\include`/`\subfile`/`\bibliography`/`\addbibresource`, acha o `.tex` principal, e aponta `\ref`/`\label` quebrados ou duplicados, ambientes e chaves desbalanceados, figuras/tabelas sem legenda ou nunca citadas, TODOs, blocos comentados, idioma pt-BR ausente e classe diferente de abnTeX2 |
 | `refs` | `\cite` sem entrada, entradas nunca citadas, chaves duplicadas, campos obrigatórios por tipo, DOI/ISBN/arXiv. Com `--online`: existência via Crossref/OpenAlex (+arXiv), com classificação `confirmada` / `divergente` / `não encontrada (não verificada)` e score, e detecção de retratações |
 | `abnt` | NBR 6022 (estrutura), 6023 (referências no `.bib`), 6028 (resumo e palavras-chave), 10520 (citações) e 14724 (o que está visível no fonte). Adapta-se a `abntex2cite`, `biblatex-abnt` e `natbib`. O que depende de renderização sai como "revisar manualmente" |
@@ -537,6 +702,7 @@ Cada verificador é um plugin descoberto pelo grupo de entry points `errei.check
 | `periodico` | estrato Qualis **do periódico-alvo** (CSV), métricas abertas do OpenAlex e índice de prontidão 0–100 por componentes |
 | `completude` | o que falta para o trabalho estar completo: checklist de elementos pré-textuais, textuais e pós-textuais da NBR 6022 (artigo) ou NBR 14724 (monografia, TCC, dissertação, tese), dados da capa/folha de rosto (abnTeX2) e o que escrever em cada elemento ausente |
 | `nacionais` | com `--online`, sugere **artigos e livros brasileiros** para afirmações que citam obras estrangeiras (OpenAlex com autoria no Brasil, Open Library e Google Books em português), ordenados pelo modelo errei-cita |
+| `apud` | citação de citação: ordem das obras, original também citada diretamente, consultada fora do `.bib`, excesso e lista de referências; com `--online`, acesso aberto da original e se a consultada a cita (listas de referências do OpenAlex, Crossref e Semantic Scholar e, com `--texto-completo`, o texto aberto), inclusive para original só digitada; com `--ia-claude`, a conferência opcional do Claude Code |
 | `literatura` | com `--online`, para cada afirmação, fontes **nacionais e internacionais** (OpenAlex, Semantic Scholar; confirmadas por DOI/arXiv) em que o modelo errei-cita acha um trecho que **sustenta** a afirmação; as do mesmo tema que não sustentam aparecem como relacionadas |
 
 ## Tabela Qualis (CSV)
@@ -587,9 +753,13 @@ exceção, o erro vira o achado `CORE-CHECKER-001` e os demais verificadores con
 
 ## Limitações
 
-- O errei analisa o **fonte LaTeX**, não o PDF. Macros próprias e pacotes incomuns podem
-  gerar falsos positivos; a formatação final (margens, recuos, aparência das referências)
-  precisa ser conferida no PDF.
+- Num projeto LaTeX, o errei analisa o **fonte**, não o PDF. Macros próprias e pacotes
+  incomuns podem gerar falsos positivos; a formatação final (margens, recuos, aparência das
+  referências) precisa ser conferida no PDF.
+- Num `.docx`/`.pdf`, títulos, citações e referências são reconhecidos por heurísticas
+  (estilos, numeração, autor e ano). Citações em formatos incomuns podem não ser ligadas, e
+  a extração do PDF pode colar palavras ou misturar colunas. Veja
+  [Trabalhos em .docx e .pdf](#trabalhos-em-docx-e-pdf).
 - **Similaridade ≠ plágio.** A comparação é com o próprio texto, com um corpus local que
   você indicar e (com `--online`) com metadados e resumos públicos. **Não substitui
   Turnitin/iThenticate**, que comparam com bases de texto completo.
@@ -660,6 +830,20 @@ possíveis falsos positivos e negativos.
 | `ABNT-RESUMO-005` | aviso | Resumo sem objetivo, método, resultados ou conclusões | heurística |
 | `ABNT-STYLE-001` | info | Estilo de citação detectado | determinística |
 | `ABNT-STYLE-002` | aviso | Estilo bibliográfico não ABNT | determinística |
+| `APUD-ACESSO-001` | sugestão | Obra original disponível em acesso aberto | determinística |
+| `APUD-CONS-001` | aviso | Obra consultada fora do .bib | determinística |
+| `APUD-DIRETA-001` | aviso | Obra original também citada diretamente | determinística |
+| `APUD-EXCESSO-001` | sugestão | Muitas citações de citação | heurística |
+| `APUD-IA-001` | info | Avaliação do Claude Code (IA, opcional) | heurística |
+| `APUD-LISTA-001` | info | Obra original na lista de referências | determinística |
+| `APUD-MESMA-001` | erro | Mesma obra como original e consultada | determinística |
+| `APUD-ORDEM-001` | aviso | Obra original posterior à obra consultada | heurística |
+| `APUD-REDE-001` | info | A obra consultada cita a original | determinística |
+| `APUD-REDE-002` | aviso | A obra consultada não cita a original nas bases | heurística |
+| `APUD-TEXTO-001` | info | Original mencionada no texto aberto da consultada | heurística |
+| `APUD-TEXTO-002` | sugestão | Trecho da consultada não sustenta a afirmação | heurística |
+| `APUD-TEXTO-003` | aviso | Original não mencionada no texto aberto da consultada | heurística |
+| `APUD-VERIF-001` | info | Citação de citação não verificável nas bases | determinística |
 | `COMP-IA-001` | info | Orientações para completar (IA online) | heurística |
 | `COMP-META-001` | aviso | Dado de identificação ausente | determinística |
 | `COMP-OBRIG-001` | aviso | Elemento obrigatório ausente | determinística |
@@ -670,6 +854,11 @@ possíveis falsos positivos e negativos.
 | `CORE-NET-001` | info | Fonte online indisponível | determinística |
 | `CORE-PLUGIN-001` | info | Plugin não carregado | determinística |
 | `CORE-PROJ-001` | info | Observação sobre o projeto | determinística |
+| `DOC-CIT-001` | erro | Referência cruzada não resolvida | determinística |
+| `DOC-LEITURA-001` | info | Documento lido | determinística |
+| `DOC-LEITURA-002` | aviso | Leitura do PDF com limitações | heurística |
+| `DOC-REF-001` | aviso | Referência não reconhecida | heurística |
+| `DOC-REF-002` | aviso | Lista de referências fora da ordem alfabética | determinística |
 | `ESCRITA-ABS-001` | aviso | Resumo e abstract inconsistentes | heurística |
 | `ESCRITA-CIT-001` | sugestão | Seção de revisão sem citações | heurística |
 | `ESCRITA-OBJ-001` | aviso | Objetivo não identificado | heurística |
@@ -760,7 +949,7 @@ possíveis falsos positivos e negativos.
 
 MIT. Veja [LICENSE](LICENSE). O errei é **inteiramente open source**, também nos modelos,
 nos dados e nas dependências: nenhuma função exige serviço pago (o Gemini é opcional e
-desligado por padrão), e o teste `tests/test_licencas.py` falha se uma dependência
+desligado por padrão, assim como o Claude Code em `--ia-claude`), e o teste `tests/test_licencas.py` falha se uma dependência
 instalada declarar licença fora da lista aprovada pela OSI.
 
 ### Dependências e licenças
@@ -778,6 +967,10 @@ instalada declarar licença fora da lista aprovada pela OSI.
 | torch | modelo, traducao | BSD-3-Clause |
 | transformers | modelo, traducao | Apache-2.0 |
 | sentencepiece | modelo, traducao | Apache-2.0 |
+
+Programa externo opcional: o **Claude Code** (CLI `claude`, da Anthropic, fechado) só é
+chamado com `--online --ia-claude`. Não é dependência Python, não é instalado pelo errei e
+nenhuma função depende dele.
 
 Modelos:
 

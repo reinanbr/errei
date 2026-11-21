@@ -28,7 +28,13 @@ def java_version() -> str | None:
         return None
     try:
         res = subprocess.run(
-            [java, "-version"], capture_output=True, text=True, timeout=15, check=False
+            [java, "-version"],
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+            timeout=15,
+            check=False,
         )
     except (OSError, subprocess.TimeoutExpired):
         return None
@@ -119,6 +125,14 @@ def run_doctor(*, download: bool = False, online: bool = False) -> int:
         "IA online (Gemini, --ia-online)",
         True if gemini.api_key() else None,
         "chave encontrada" if gemini.api_key() else f"opcional: defina {gemini.KEY_ENVS[1]}",
+    )
+    from errei.net import claudecode
+
+    exe = claudecode.executavel()
+    row(
+        "Claude Code (--ia-claude)",
+        True if exe else None,
+        exe or "opcional: instale o Claude Code (CLI 'claude') para conferir apud com IA",
     )
     row(
         "Google Books (livros nacionais)",

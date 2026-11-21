@@ -6,6 +6,7 @@ import re
 from bisect import bisect_right
 from dataclasses import dataclass, field
 from pathlib import Path
+from typing import Any
 
 from errei.model import Location
 
@@ -39,6 +40,8 @@ class SourceFile:
     _line_starts: list[int] = field(default_factory=list, repr=False)
     _masked: str | None = field(default=None, repr=False)
     _comments: list[Comment] | None = field(default=None, repr=False)
+    # .docx/.pdf convertido: errei.documento.converter.Conversao (texto sintético → original)
+    conversao: Any = field(default=None, repr=False)
 
     def __post_init__(self) -> None:
         starts = [0]
@@ -53,6 +56,9 @@ class SourceFile:
         return idx + 1, offset - self._line_starts[idx] + 1
 
     def location(self, start: int, end: int | None = None) -> Location:
+        if self.conversao is not None:
+            loc: Location = self.conversao.location(start, end)
+            return loc
         line, col = self.line_col(start)
         if end is None:
             return Location(self.path, line, col)
@@ -124,6 +130,8 @@ class SourceFile:
     def excerpt(self, start: int, end: int, limit: int = 160) -> str:
         from errei.model import clip
 
+        if self.conversao is not None:
+            return clip(self.conversao.trecho(start, end), limit)
         return clip(self.text[start:end], limit)
 
 

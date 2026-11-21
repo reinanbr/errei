@@ -7,6 +7,24 @@ seguem [SemVer](https://semver.org/lang/pt-BR/).
 
 ### Adicionado
 
+- Auditoria de trabalhos em `.docx` e `.pdf`: `errei trabalho.docx`, `errei artigo.pdf`
+  (ou uma pasta sem `.tex` com um único documento). O arquivo é lido em memória, sem ser
+  alterado: o `.docx` com a biblioteca padrão (estilos de título, listas, citações
+  recuadas, legendas, papel, margens e fonte; entidades XML recusadas), o PDF com o `pypdf`
+  (novo extra `errei[documentos]`, incluído no `all`), com remoção de cabeçalhos, rodapés e
+  números de página, junção de linhas e de palavras hifenizadas e aviso para PDF
+  digitalizado ou em duas colunas. Citações digitadas (NBR 10520, APA, numéricas, apud) são
+  ligadas à lista de referências (ABNT, APA, Chicago, IEEE, Vancouver) por autor e ano, e
+  todos os verificadores rodam sobre o texto convertido.
+- Localização por unidade do documento: `trabalho.docx, § 12` (parágrafo) e
+  `artigo.pdf, p. 3` (página), no terminal, em Markdown, JSON (campo `unit`) e PDF.
+- Achados adaptados ao documento: obras como são citadas ("SILVA, 2020") em vez de chaves,
+  "lista de referências" em vez de `.bib`, sem sugestões em LaTeX, sem as regras que só
+  valem para o `.bib`. Limitações próprias de `.docx` e `.pdf` no relatório.
+- Verificador `documento` (só `.docx`/`.pdf`): `DOC-LEITURA-001`, `DOC-LEITURA-002`,
+  `DOC-REF-001` (referência irreconhecível), `DOC-REF-002` (lista fora da ordem
+  alfabética) e `DOC-CIT-001` (`??` não resolvido no PDF). Verificadores declaram os
+  formatos a que se aplicam (`formatos`); o `latex` roda só em projetos LaTeX.
 - Verificador `literatura` (com `--online`): para cada afirmação, fontes nacionais e
   internacionais (OpenAlex como base primária e Semantic Scholar; consulta em pt e en) que
   **sustentam** a afirmação segundo o errei-cita, com o trecho da fonte no idioma original
@@ -33,6 +51,27 @@ seguem [SemVer](https://semver.org/lang/pt-BR/).
   com a página do trecho; sem resumo, mas com texto, a atribuição ainda é avaliada.
 - `literatura`: sugestões da rede de citações das referências (obras que elas citam e que as
   citam, mais citadas primeiro; `[literatura] rede`, `rede_refs`, `rede_por_ref`).
+- Verificador `apud` (citação de citação, NBR 10520). Reconhece `\apud`, `\apudonline`
+  (abntex2cite), `\apud[p]{o}[p]{c}` e `\textapud` (biblatex-abnt) e "apud"/"citado por"
+  digitados entre citações. Sem rede: `APUD-ORDEM-001` (original posterior à consultada,
+  com a ordem certa), `APUD-MESMA-001`, `APUD-DIRETA-001` (original também citada
+  diretamente), `APUD-CONS-001` (consultada fora do `.bib`), `APUD-EXCESSO-001` (`[apud]
+  max_proporcao`) e `APUD-LISTA-001`, além da métrica "Citação de citação (apud)". Com
+  `--online`, sem IA: `APUD-ACESSO-001` (original em acesso aberto), `APUD-REDE-001`/`002`
+  (a lista de referências da consultada inclui ou não a original, procurada no OpenAlex, no
+  Crossref e no Semantic Scholar, por registro, DOI, título ou autor e ano) e
+  `APUD-VERIF-001`. Uma original só digitada ("Flesch (1948) apud ...") é identificada na
+  lista de referências da consultada ou, se dominar com folga, pela obra mais citada do
+  autor naquele ano no OpenAlex. Com
+  `--texto-completo`: `APUD-TEXTO-001`/`002`/`003` (menção à original no texto aberto da
+  consultada e, com o errei-cita, se o trecho sustenta a frase).
+- `--ia-claude` e `--ia-claude-modelo` (seção `[ia_claude]`, só no config do usuário):
+  conferência opcional de cada apud pelo Claude Code (`claude -p`), desligada por padrão e
+  nunca o primeiro recurso. A sessão é isolada: pasta temporária vazia, só WebSearch e
+  WebFetch, `--safe-mode`, sem MCP, sem permissões e com tempo e orçamento limitados. A
+  resposta vem num esquema JSON fixo, os textos são cortados, as respostas ficam no cache
+  `http.sqlite` e o envio é registrado em `meta.ia_claude`. O achado `APUD-IA-001` é sempre
+  `info`. `errei doctor` mostra se o `claude` está instalado.
 
 ### Alterado
 
@@ -40,6 +79,13 @@ seguem [SemVer](https://semver.org/lang/pt-BR/).
   Agora vale qualquer texto de acesso livre; o relatório continua mostrando no máximo 300
   caracteres por trecho, sempre com a fonte (citação, Lei 9.610, art. 46, III).
 - O idioma do trecho é detectado pelo próprio texto (antes vinha do idioma declarado da obra).
+- O scanner aceita argumento opcional entre os obrigatórios do `\apud` do biblatex-abnt, e
+  `\textapud` passa a contar como citação. Antes, a obra consultada desse formato aparecia
+  como "entrada nunca citada" (`REFS-BIB-001`).
+- `\apudonline` e `\textapud` viram "o estudo" na frase avaliada pelo errei-cita, como as
+  demais citações textuais.
+- `ABNT-CIT-001` vale também para o biblatex-abnt, e a sugestão passa a ser
+  `\apud{original}{consultada}` (antes, `\apud{citado}{original}`, com os nomes trocados).
 
 ### Licenças
 

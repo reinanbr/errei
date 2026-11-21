@@ -22,6 +22,7 @@ FONT_DIRS = (
     "/usr/local/share/fonts",
     "/Library/Fonts",
 )
+
 SEV_COLOR = {
     Severity.ERRO: "#b3261e",
     Severity.AVISO: "#a15c00",
@@ -189,8 +190,7 @@ def write_pdf(report: Report, path: Path) -> None:
     def loc(f: Finding) -> str:
         if not f.location:
             return "(projeto)"
-        col = f":{f.location.column}" if f.location.column else ""
-        return t(f"{f.location.file.as_posix()}:{f.location.line}{col}")
+        return t(str(f.location))
 
     def table(rows: list[list[Any]], widths: list[float], header: list[str]) -> Any:
         tb = Table(
@@ -474,7 +474,11 @@ def write_pdf(report: Report, path: Path) -> None:
         story.append(P(t(file), "h2"))
         rows = []
         for f in items:
-            line = str(f.location.line) if f.location else ""
+            line = (
+                (f.location.rotulo if f.location.unit else str(f.location.line))
+                if f.location
+                else ""
+            )
             msg = f"<b>{t(f.code)}</b> — {t(f.message)}"
             if f.suggestion:
                 msg += f'<br/><font color="#2e7d32">→ {t(f.suggestion)}</font>'

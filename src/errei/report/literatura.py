@@ -16,6 +16,8 @@ def onde(f: Finding) -> str:
     loc = f.location
     if loc is None:
         return "(projeto)"
+    if loc.unit:
+        return str(loc)
     col = loc.column if loc.column is not None else 1
     return f"{loc.file.as_posix()}:{loc.line}:{col}"
 

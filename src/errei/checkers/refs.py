@@ -686,7 +686,7 @@ class RefsChecker(BaseChecker):
         ref: dict[str, Any] = {
             "key": e.key,
             "status": rec.get("status", "não verificada"),
-            "bib_location": f"{loc.file.as_posix()}:{loc.line}",
+            "bib_location": loc.onde,
             "divergences": list(rec.get("divergences", [])),
             "note": rec.get("note", ""),
             "uses": [],
@@ -930,7 +930,7 @@ def cite_context(project: Project, use: Any) -> CiteContext | None:
         return None
     # citações parentéticas somem; textuais (\citeonline, \citet…) viram "o estudo",
     # para a frase continuar gramatical para o modelo
-    from errei.latex.extract import CITE_AUTHOR, CITE_TEXT
+    from errei.latex.extract import CITE_APUD_TEXT, CITE_AUTHOR, CITE_TEXT
 
     text = para.text
     pieces: list[str] = []
@@ -940,7 +940,7 @@ def cite_context(project: Project, use: Any) -> CiteContext | None:
         if ce <= sent.start or cs >= sent.end:
             continue
         pieces.append(text[pos : max(pos, cs)])
-        if c.macro in CITE_TEXT or c.macro in CITE_AUTHOR:
+        if c.macro in CITE_TEXT or c.macro in CITE_AUTHOR or c.macro in CITE_APUD_TEXT:
             pieces.append("o estudo")
         pos = max(pos, min(ce, sent.end))
     pieces.append(text[pos : sent.end])
@@ -955,9 +955,7 @@ def cite_context(project: Project, use: Any) -> CiteContext | None:
     pm = PAGE_RE.search(opts)
     pages = (int(pm.group(1)), int(pm.group(2) or pm.group(1))) if pm else None
     loc = use.source.location(use.offset)
-    return CiteContext(
-        f"{loc.file.as_posix()}:{loc.line}", cleaned, quote, pages, use.offset, use.source
-    )
+    return CiteContext(loc.onde, cleaned, quote, pages, use.offset, use.source)
 
 
 def _notfound_confidence(best_score: float, weak: bool) -> float:

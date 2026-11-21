@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import copy
-import os
 import sys
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -64,8 +63,21 @@ DEFAULTS: dict[str, Any] = {
         "rede_refs": 10,
         "rede_por_ref": 25,
     },
+    # citação de citação: proporção de obras citadas por apud acima da qual o errei sugere
+    # ler as originais (é referência usual, não norma)
+    "apud": {"enabled": True, "min_ocorrencias": 3, "max_proporcao": 0.15},
     # IA online (Gemini): só vale no config do USUÁRIO ou em flags, nunca no .errei.toml
     "ia_online": {"enabled": False, "modelo": "", "api_key": ""},
+    # Claude Code (CLI claude), só para conferir citações de citação: idem, nunca no
+    # .errei.toml (envia trechos a um serviço externo e executa um programa)
+    "ia_claude": {
+        "enabled": False,
+        "modelo": "",
+        "comando": "",
+        "max_consultas": 10,
+        "orcamento_usd": 0.5,
+        "timeout": 300,
+    },
 }
 
 TEMPLATE = """\
@@ -129,8 +141,12 @@ idiomas = []       # --lit-idioma pt,en (vazio = todos)
 rede = true        # sugere também obras da rede de citações das suas referências
 rede_refs = 10     # quantas referências (com DOI) expandir
 
-# [ia_online] (Gemini) é ignorado aqui por segurança: configure em
-# ~/.config/errei/config.toml ou use --ia-online com GEMINI_API_KEY no ambiente.
+[apud]             # citação de citação (\\apud, \\apudonline, "apud" digitado)
+min_ocorrencias = 3
+max_proporcao = 0.15   # acima disso, sugere ler as obras originais
+
+# [ia_online] (Gemini) e [ia_claude] (Claude Code) são ignorados aqui por segurança:
+# configure em ~/.config/errei/config.toml ou use --ia-online / --ia-claude.
 """
 
 
@@ -149,13 +165,15 @@ def _deep_merge(base: dict[str, Any], over: dict[str, Any]) -> dict[str, Any]:
 
 
 def user_config_path() -> Path:
-    base = os.environ.get("XDG_CONFIG_HOME") or str(Path.home() / ".config")
-    return Path(base) / "errei" / "config.toml"
+    from errei.paths import config_dir
+
+    return config_dir() / "config.toml"
 
 
 def cache_dir() -> Path:
-    base = os.environ.get("XDG_CACHE_HOME") or str(Path.home() / ".cache")
-    return Path(base) / "errei"
+    from errei.paths import cache_dir as pasta
+
+    return pasta()
 
 
 def _load_toml(path: Path) -> dict[str, Any]:
@@ -192,7 +210,8 @@ class Config:
             data = _deep_merge(data, loaded)
             trusted = _deep_merge(trusted, loaded)
             sources.append(user)
-        project = root / PROJECT_CONFIG
+        # um arquivo (.tex/.docx/.pdf): o .errei.toml é o da pasta dele
+        project = (root.parent if root.is_file() else root) / PROJECT_CONFIG
         if project.is_file():
             data = _deep_merge(data, _load_toml(project))
             sources.append(project)

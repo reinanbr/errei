@@ -18,7 +18,7 @@ from errei.model import Finding, Severity
 from errei.project import Project, load_project
 from errei.registry import discover, select
 from errei.report.build import Report
-from errei.report.limitations import IA_ONLINE, limitations_for
+from errei.report.limitations import IA_CLAUDE, IA_ONLINE, limitations_for
 
 
 def _safe_run(checker: Checker, project: Project, ctx: RunContext) -> list[Finding]:
@@ -71,12 +71,24 @@ def run(
     only = list(config.get("checkers", "only", []) or [])
     skip = list(config.get("checkers", "skip", []) or [])
     checkers = select(disc.checkers, only, skip)
+    todos = ("latex", "docx", "pdf")
+    fora = [c.name for c in checkers if project.formato not in getattr(c, "formatos", todos)]
+    checkers = [c for c in checkers if c.name not in fora]
 
     pre: list[Finding] = [
         Finding("CORE-PLUGIN-001", Severity.INFO, f"plugin '{n}' não carregado: {err}", "core")
         for n, err in disc.errors
     ]
     pre += [Finding("CORE-PROJ-001", Severity.INFO, n, "core") for n in project.notes]
+    if fora and (only or project.formato != "latex"):
+        pre.append(
+            Finding(
+                "CORE-PROJ-001",
+                Severity.INFO,
+                f"verificador(es) que não se aplicam a .{project.formato}: {', '.join(fora)}",
+                "core",
+            )
+        )
 
     if http is None and config.online and any(c.uses_network for c in checkers):
         try:
@@ -114,6 +126,22 @@ def run(
             )
         else:
             ctx.shared["gemini"] = gem
+    if ctx.http is not None and config.trusted_get("ia_claude", "enabled", False):
+        from errei.net import claudecode
+
+        cc, motivo = claudecode.make(config, ctx.http)
+        if cc is None:
+            pre.append(
+                Finding(
+                    "CORE-DEP-001",
+                    Severity.AVISO,
+                    f"--ia-claude pedido, mas {motivo}; seguindo sem o Claude Code (as "
+                    "verificações nas bases abertas continuam)",
+                    "core",
+                )
+            )
+        else:
+            ctx.shared["claude_code"] = cc
     qualis_csv = str(config.get("periodico", "qualis_csv", "") or "")
     if qualis_csv and any(c.name == "periodico" for c in checkers):
         from errei.qualis import load_qualis
@@ -143,6 +171,11 @@ def run(
     for c in phase1:
         ctx.prior_findings = list(findings)
         findings.extend(_safe_run(c, project, ctx))
+
+    if project.documento is not None:
+        from errei.documento.adaptar import adaptar
+
+        findings = adaptar(findings, project)
 
     hosts: set[str] = set()
     if ctx.http is not None:
@@ -187,6 +220,24 @@ def run(
         "flags": flags,
         "config_files": [str(p) for p in config.sources],
     }
+    info = project.documento
+    if info is not None:
+        doc = info.documento
+        meta["documento"] = {
+            "formato": doc.formato,
+            "arquivo": doc.caminho.as_posix(),
+            "sha256": doc.hash,
+            "paginas": doc.paginas if doc.formato == "pdf" else None,
+            "paragrafos": len(doc.blocos),
+            "titulos": info.titulos,
+            "referencias": len(info.referencias),
+            "referencias_reconhecidas": sum(1 for r in info.referencias if r.reconhecida),
+            "citacoes": info.citacoes,
+            "citacoes_sem_referencia": len(info.sem_referencia),
+            "nao_analisado": {**doc.ignorado, **info.pulados},
+            "localizacao": "página" if doc.formato == "pdf" else "nº do parágrafo",
+        }
+        meta["files"] = {"documento": [doc.caminho.as_posix()], "tex": [], "bib": []}
     meta.update(ctx.extra_meta)
     gem = ctx.shared.get("gemini")
     if gem is not None:
@@ -198,6 +249,19 @@ def run(
             "enviado": sorted(set(gem.sent)),
             "uso": "apenas sugestões no relatório; nenhum texto é escrito no artigo",
         }
+    cc = ctx.shared.get("claude_code")
+    if cc is not None:
+        meta["ia_claude"] = {
+            "servico": "Claude Code (Anthropic)",
+            "modelo": cc.model,
+            "chamadas": cc.calls,
+            "do_cache": cc.cached,
+            "falhas": cc.failures,
+            "custo_usd": round(cc.cost_usd, 4),
+            "ferramentas": "WebSearch, WebFetch (sessão isolada, sem acesso aos arquivos)",
+            "enviado": sorted(set(cc.sent)),
+            "uso": "apenas indicadores sobre citações de citação; nenhum texto é escrito no artigo",
+        }
     from errei.report.base import build_base
 
     meta["base"] = build_base(meta, names, hosts)
@@ -205,7 +269,9 @@ def run(
         findings=kept,
         metrics=ctx.metrics,
         meta=meta,
-        limitations=limitations_for(names) + ([IA_ONLINE] if gem is not None else []),
+        limitations=limitations_for(names, project.formato)
+        + ([IA_ONLINE] if gem is not None else [])
+        + ([IA_CLAUDE] if cc is not None else []),
         checkers=[(c.name, c.title) for c in checkers],
         notes=project.notes,
         suppressed=suppressed,

@@ -42,7 +42,9 @@ CITE_PAREN = {
 CITE_TEXT = {"citeonline", "citet", "textcite", "Textcite", "citealt", "Citet", "citeauthoronline"}
 CITE_AUTHOR = {"citeauthor", "Citeauthor"}
 CITE_YEAR = {"citeyear"}
-CITE_APUD = {"apud", "apudonline", "Idem", "Ibidem", "opcit", "passim", "cfcite"}
+CITE_APUD = {"apud", "apudonline", "textapud", "Idem", "Ibidem", "opcit", "passim", "cfcite"}
+# citação de citação na forma textual: "Silva (2020 apud SOUZA, 2019)"
+CITE_APUD_TEXT = {"apudonline", "textapud"}
 ALL_CITES = CITE_PAREN | CITE_TEXT | CITE_AUTHOR | CITE_YEAR | CITE_APUD | {"nocite"}
 REF_MACROS = {"ref", "eqref", "autoref", "cref", "Cref", "pageref", "nameref", "vref"}
 TEXT_MACROS = {
@@ -234,7 +236,8 @@ def _context_db() -> Any:
     m = ms.MacroSpec
     e = ms.EnvironmentSpec
     macros = [m(n, "*[[{") for n in (CITE_PAREN | CITE_TEXT | CITE_AUTHOR | CITE_YEAR)]
-    macros += [m(n, "[[{{") for n in ("apud", "apudonline")]
+    # abntex2cite: \apud[p]{original}{consultada}; biblatex-abnt: \apud[p]{original}[p]{consultada}
+    macros += [m(n, "[[{[{") for n in ("apud", "apudonline", "textapud")]
     macros += [m(n, "{") for n in ("Idem", "Ibidem", "opcit", "passim", "cfcite", "nocite")]
     macros += [m(n, "*{") for n in REF_MACROS]
     macros += [
@@ -576,7 +579,9 @@ class _Emitter:
             self.put("Silva", node.pos)
         elif name in CITE_YEAR:
             self.put("2020", node.pos)
-        elif name in ("apud", "apudonline"):
+        elif name in CITE_APUD_TEXT:
+            self.put("Silva (2020 apud SOUZA, 2019)", node.pos)
+        elif name == "apud":
             self.put("(SILVA, 2020 apud SOUZA, 2019)", node.pos)
         else:
             self.put("(SILVA, 2020)", node.pos)

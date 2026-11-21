@@ -10,9 +10,21 @@ from typing import Any
 from errei.checkers.base import Checker
 
 GROUP = "errei.checkers"
-BUILTIN_ORDER = ("latex", "refs", "abnt", "ptbr", "escrita", "plagio", "ia", "periodico")
+BUILTIN_ORDER = (
+    "latex",
+    "documento",
+    "refs",
+    "abnt",
+    "apud",
+    "ptbr",
+    "escrita",
+    "plagio",
+    "ia",
+    "periodico",
+)
 _BUILTIN = {
     "latex": "errei.checkers.latex:LatexChecker",
+    "documento": "errei.checkers.documento:DocumentoChecker",
     "refs": "errei.checkers.refs:RefsChecker",
     "abnt": "errei.checkers.abnt:AbntChecker",
     "ptbr": "errei.checkers.ptbr:PtbrChecker",
@@ -21,6 +33,7 @@ _BUILTIN = {
     "ia": "errei.checkers.ia:IaChecker",
     "periodico": "errei.checkers.periodico:PeriodicoChecker",
     "referencia": "errei.checkers.referencia:ReferenciaChecker",
+    "apud": "errei.checkers.apud:ApudChecker",
 }
 
 

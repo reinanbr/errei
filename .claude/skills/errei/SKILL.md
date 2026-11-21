@@ -1,6 +1,6 @@
 ---
 name: errei
-description: Audita um artigo ou monografia em LaTeX (pt-BR) com a CLI errei e resume o relatório (estrutura, completude, referências, obras nacionais, literatura por afirmação, ABNT, escrita, similaridade, indícios de IA, prontidão). Use quando o usuário pedir para revisar/auditar um artigo LaTeX ou rodar /errei.
+description: Audita um artigo ou monografia em LaTeX, .docx ou .pdf (pt-BR) com a CLI errei e resume o relatório (estrutura, completude, referências, citação de citação (apud), obras nacionais, literatura por afirmação, ABNT, escrita, similaridade, indícios de IA, prontidão). Use quando o usuário pedir para revisar/auditar um artigo (LaTeX, Word/.docx ou PDF) ou rodar /errei.
 ---
 
 # /errei — auditoria de artigo LaTeX
@@ -9,7 +9,9 @@ Camada fina sobre a CLI `errei`. Não reimplemente verificações: rode a CLI e 
 
 ## Passos
 
-1. Pasta do artigo: o argumento do usuário (`/errei caminho`) ou o diretório atual.
+1. Alvo: o argumento do usuário (`/errei caminho`: pasta LaTeX, `.tex`, `.docx` ou `.pdf`)
+   ou o diretório atual. Em `.docx`/`.pdf`, a localização dos achados é `§ N` (parágrafo)
+   ou `p. N` (página), não linha.
 2. Rode a CLI gravando o JSON em arquivo temporário (somente leitura no artigo):
 
    ```bash
@@ -36,6 +38,10 @@ Camada fina sobre a CLI `errei`. Não reimplemente verificações: rode a CLI e 
      (padrão: detectar).
    - **Não** adicione `--ia-online` por conta própria: envia frases do trabalho ao Google
      Gemini e exige chave (`GEMINI_API_KEY`). Só use se o usuário pedir.
+   - **Não** adicione `--ia-claude` por conta própria: envia a frase de cada citação de
+     citação e os metadados das obras à Anthropic, roda o `claude -p` e cobra na conta do
+     usuário. Só use se o usuário pedir que o Claude Code confira os apud (requer
+     `--online`).
    - Código de saída 1 = há erros (normal); 2 = problema de uso/ambiente (mostre a mensagem
      de stderr e sugira `errei doctor`).
 3. Leia o JSON (`schema` 1): `summary.by_severity`, `summary.by_checker`, `findings[]`
@@ -60,6 +66,12 @@ Camada fina sobre a CLI `errei`. Não reimplemente verificações: rode a CLI e 
    - **literatura por afirmação** (`LIT-SUG-001`, com `--online`): reproduza o campo `bloco`
      do JSON (afirmação, fonte, trecho no idioma original, confiança). `LIT-REL-001` é fonte
      do mesmo tema que **não** sustenta; nunca apresente como apoio. Sempre "leia a fonte";
+   - **citação de citação** (`APUD-*`): primeiro os erros e avisos (`APUD-MESMA-001`,
+     `APUD-ORDEM-001` com a ordem certa, `APUD-DIRETA-001`, `APUD-CONS-001`, `APUD-REDE-002`,
+     `APUD-TEXTO-003`); depois `APUD-ACESSO-001` (a original está em acesso aberto: sugira
+     ler e citar direto). `APUD-REDE-002` e `APUD-TEXTO-003` são convites a conferir, não
+     prova. `APUD-IA-001` é indicador do Claude Code: diga que os links e trechos não foram
+     conferidos pelo errei;
    - orientações de IA (`COMP-IA-001`) são orientações: não as transforme em texto pronto
      para o trabalho;
    - feche com 1–2 linhas da seção Limitações.

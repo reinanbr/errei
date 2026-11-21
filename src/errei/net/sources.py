@@ -34,6 +34,34 @@ class Candidate:
 
 
 @dataclass(slots=True)
+class Referencia:
+    """Uma obra da lista de referências de outra (Crossref, Semantic Scholar, OpenAlex)."""
+
+    doi: str = ""
+    titulo: str = ""
+    autor: str = ""  # sobrenome do primeiro autor
+    ano: int | None = None
+    texto: str = ""  # a referência como impressa (Crossref ``unstructured``)
+    openalex_id: str = ""
+
+
+def _ano(v: Any) -> int | None:
+    m = re.search(r"\b(1[5-9]\d\d|20\d\d)\b", str(v or ""))
+    return int(m.group(1)) if m else None
+
+
+def _sobrenome(nome: str) -> str:
+    """'Flesch, R.F.' → 'Flesch'; 'Rudolf Flesch' → 'Flesch'; 'Flesch RF' → 'Flesch'."""
+    nome = " ".join(str(nome or "").split())
+    if "," in nome:
+        return nome.split(",", 1)[0].strip()
+    partes = nome.split()
+    if len(partes) > 1 and re.fullmatch(r"[A-Z]{1,3}\.?", partes[-1]):
+        return partes[0]
+    return partes[-1] if partes else ""
+
+
+@dataclass(slots=True)
 class Lookup:
     status: str  # found | notfound | unavailable
     candidate: Candidate | None = None
@@ -99,6 +127,30 @@ def crossref_by_doi(http: Any, doi: str) -> Lookup:
     if not data or "message" not in data:
         return Lookup("unavailable")
     return Lookup("found", _crossref_item(data["message"]))
+
+
+def crossref_referencias(http: Any, doi: str) -> list[Referencia] | None:
+    """Lista de referências depositada no Crossref (aberta desde 2022). ``[]`` se não houver."""
+    res = http.get_json(f"{CROSSREF}/works/{quote(doi, safe='/:;()._-')}")
+    if res is None:
+        return None
+    status, data = res
+    if status == 404 or not isinstance(data, dict):
+        return [] if status == 404 else None
+    out: list[Referencia] = []
+    for r in (data.get("message") or {}).get("reference") or []:
+        if not isinstance(r, dict):
+            continue
+        out.append(
+            Referencia(
+                doi=str(r.get("DOI") or "").lower(),
+                titulo=str(r.get("article-title") or r.get("volume-title") or ""),
+                autor=_sobrenome(str(r.get("author") or "")),
+                ano=_ano(r.get("year")),
+                texto=" ".join(str(r.get("unstructured") or "").split()),
+            )
+        )
+    return out
 
 
 def crossref_search(http: Any, query: str, rows: int = 5) -> list[Candidate] | None:
@@ -243,6 +295,55 @@ def openalex_citantes(http: Any, work_id: str, rows: int = 25) -> list[Candidate
     return [_openalex_item(it) for it in res[1].get("results") or []]
 
 
+def openalex_obras(http: Any, ids: list[str]) -> list[Referencia] | None:
+    """Autor, ano, título e DOI das obras ``ids`` (em lotes de 50), para casar referências."""
+    lista = [_wid(w) for w in ids if w]
+    out: list[Referencia] = []
+    for i in range(0, len(lista), 50):
+        res = http.get_json(
+            f"{OPENALEX}/works",
+            {
+                "filter": "openalex_id:" + "|".join(lista[i : i + 50]),
+                "per-page": 50,
+                "select": "id,doi,title,publication_year,authorships",
+            },
+        )
+        if res is None or res[1] is None:
+            return out or None
+        for it in res[1].get("results") or []:
+            c = _openalex_item(it)
+            out.append(
+                Referencia(
+                    doi=c.doi.lower(),
+                    titulo=c.title,
+                    autor=c.authors[0] if c.authors else "",
+                    ano=c.year,
+                    openalex_id=str(it.get("id") or ""),
+                )
+            )
+    return out
+
+
+def openalex_autor_ano(
+    http: Any, sobrenome: str, ano: int, rows: int = 5
+) -> list[Candidate] | None:
+    """Obras de ``sobrenome`` publicadas em ``ano``, as mais citadas primeiro."""
+    nome = re.sub(r"[^\w\s'-]", " ", sobrenome).strip()
+    if not nome:
+        return []
+    res = http.get_json(
+        f"{OPENALEX}/works",
+        {
+            "filter": f"raw_author_name.search:{nome},publication_year:{int(ano)}",
+            "sort": "cited_by_count:desc",
+            "per-page": rows,
+        },
+    )
+    if res is None or res[1] is None:
+        return None
+    return [_openalex_item(it) for it in res[1].get("results") or []]
+
+
 def openalex_source_by_issn(http: Any, issn: str) -> dict[str, Any] | None:
     res = http.get_json(f"{OPENALEX}/sources", {"filter": f"issn:{issn}", "per-page": 1})
     if res is None or res[1] is None:
@@ -292,6 +393,37 @@ def s2_search(
                 None,
                 str(it.get("abstract") or ""),
                 {"arxiv": str(ext.get("ArXiv") or ""), "s2_id": str(it.get("paperId") or "")},
+            )
+        )
+    return out
+
+
+def s2_referencias(http: Any, paper_id: str) -> list[Referencia] | None:
+    """Lista de referências no Semantic Scholar (``DOI:...``, ``arXiv:...`` ou id do S2).
+
+    ``[]`` quando a obra não está lá ou a editora ocultou as referências.
+    """
+    res = http.get_json(
+        f"{S2}/paper/{quote(paper_id, safe=':/')}/references",
+        {"fields": "title,year,authors,externalIds", "limit": 1000},
+    )
+    if res is None:
+        return None
+    status, data = res
+    if status == 404 or not isinstance(data, dict):
+        return [] if status == 404 else None
+    out: list[Referencia] = []
+    for it in data.get("data") or []:
+        p = (it or {}).get("citedPaper") or {}
+        if not p.get("title"):
+            continue
+        autores = [str(a.get("name") or "") for a in p.get("authors") or [] if a]
+        out.append(
+            Referencia(
+                doi=str((p.get("externalIds") or {}).get("DOI") or "").lower(),
+                titulo=str(p.get("title") or ""),
+                autor=_sobrenome(autores[0]) if autores else "",
+                ano=_ano(p.get("year")),
             )
         )
     return out

@@ -28,8 +28,9 @@ _cache: dict[str, Any] = {}
 
 
 def dir_de(nome: str) -> Path:
-    base = os.environ.get("XDG_DATA_HOME") or str(Path.home() / ".local" / "share")
-    return Path(base) / "errei" / "modelos" / nome
+    from errei.paths import data_dir
+
+    return data_dir() / "modelos" / nome
 
 
 def model_dir() -> Path:

@@ -20,6 +20,7 @@ NORMAS = {
         "ABNT NBR 6022:2018 (artigo em publicação periódica)",
         "ABNT NBR 14724:2011 (trabalhos acadêmicos)",
     ],
+    "apud": ["ABNT NBR 10520:2023 (citações)"],
     "ptbr": ["Acordo Ortográfico da Língua Portuguesa (1990), VOLP/ABL"],
 }
 
@@ -53,6 +54,9 @@ def build_base(meta: dict[str, Any], checkers: list[str], hosts: set[str]) -> di
             if n not in normas:
                 normas.append(n)
     fontes = [HOSTS.get(h, h) for h in sorted(hosts) if h]
+    cla = meta.get("ia_claude")
+    if cla and cla.get("chamadas"):
+        fontes.append("Claude Code (Anthropic; IA opcional, --ia-claude)")
     if not meta.get("online"):
         fontes = ["nenhuma: execução offline (nada saiu da máquina)"]
     elif not fontes:
@@ -71,7 +75,12 @@ def build_base(meta: dict[str, Any], checkers: list[str], hosts: set[str]) -> di
             f"Google Gemini {ia.get('modelo')} (opcional, --ia-online): só sugestões e "
             "orientações, referências conferidas em bases abertas"
         )
-    else:
+    if cla:
+        modelos.append(
+            f"Claude Code, modelo {cla.get('modelo')} (opcional, --ia-claude): só indicadores "
+            "sobre citações de citação, numa sessão isolada com WebSearch e WebFetch"
+        )
+    if not ia and not cla:
         modelos.append("IA online: não utilizada (opcional, desligada por padrão)")
     metodos = [METODOS[c] for c in checkers if c in METODOS]
     outros: list[str] = []

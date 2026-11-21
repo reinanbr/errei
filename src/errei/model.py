@@ -49,10 +49,31 @@ class Location:
     column: int | None = None
     end_line: int | None = None
     end_column: int | None = None
+    # "" = linha do arquivo-fonte; "§" = parágrafo (.docx); "p." = página (.pdf)
+    unit: str = ""
+
+    @property
+    def rotulo(self) -> str:
+        """Posição sem o arquivo: '12:5' (linha:coluna), '§ 12' ou 'p. 3'."""
+        if self.unit:
+            if not self.line:
+                return "documento"
+            fim = f"–{self.end_line}" if self.end_line and self.end_line != self.line else ""
+            return f"{self.unit} {self.line}{fim}"
+        col = f":{self.column}" if self.column is not None else ""
+        return f"{self.line}{col}"
+
+    @property
+    def onde(self) -> str:
+        """'arquivo:linha' (LaTeX) ou 'arquivo, p. 3' / 'arquivo, § 12' (documento)."""
+        if self.unit:
+            return str(self)
+        return f"{self.file.as_posix()}:{self.line}"
 
     def __str__(self) -> str:
-        col = f":{self.column}" if self.column is not None else ""
-        return f"{self.file.as_posix()}:{self.line}{col}"
+        if self.unit:
+            return self.file.as_posix() + (f", {self.rotulo}" if self.line else "")
+        return f"{self.file.as_posix()}:{self.rotulo}"
 
 
 @dataclass(frozen=True, slots=True)
@@ -101,6 +122,7 @@ class Finding:
             "column": loc.column if loc else None,
             "end_line": loc.end_line if loc else None,
             "end_column": loc.end_column if loc else None,
+            "unit": (loc.unit or None) if loc else None,
             "excerpt": self.excerpt,
             "suggestion": self.suggestion,
             "confidence": self.confidence,

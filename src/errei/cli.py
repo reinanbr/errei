@@ -17,8 +17,8 @@ from errei.project import ProjectError
 
 app = typer.Typer(
     name="errei",
-    help="Audita um artigo científico em LaTeX (pt-BR): estrutura, referências, ABNT, "
-    "escrita, similaridade, indícios de IA e prontidão para periódicos.",
+    help="Audita um artigo científico em LaTeX, .docx ou .pdf (pt-BR): estrutura, "
+    "referências, ABNT, escrita, similaridade, indícios de IA e prontidão para periódicos.",
     add_completion=False,
     no_args_is_help=False,
     rich_markup_mode=None,
@@ -59,9 +59,15 @@ def _csv(values: list[str] | None) -> list[str]:
     return out
 
 
-@app.command("audit", help="Audita a pasta de um artigo LaTeX (padrão: pasta atual).")
+@app.command(
+    "audit",
+    help="Audita um trabalho: a pasta do LaTeX ou um arquivo .tex, .docx ou .pdf "
+    "(padrão: pasta atual).",
+)
 def audit(
-    path: Annotated[Path, typer.Argument(help="Pasta do artigo.")] = Path(),
+    path: Annotated[
+        Path, typer.Argument(help="Pasta do artigo LaTeX, ou arquivo .tex, .docx ou .pdf.")
+    ] = Path(),
     online: Annotated[
         bool | None,
         typer.Option(
@@ -191,6 +197,22 @@ def audit(
         str | None,
         typer.Option("--ia-modelo", help="Modelo Gemini (padrão: gemini-flash-lite-latest)."),
     ] = None,
+    ia_claude: Annotated[
+        bool,
+        typer.Option(
+            "--ia-claude",
+            help="Com --online, usa o Claude Code (CLI 'claude', opcional e desligado por "
+            "padrão) para conferir na web cada citação de citação (apud). ENVIA a frase e os "
+            "metadados das obras à Anthropic. Sessão isolada, só com WebSearch e WebFetch; a "
+            "IA nunca escreve no trabalho.",
+        ),
+    ] = False,
+    ia_claude_modelo: Annotated[
+        str | None,
+        typer.Option(
+            "--ia-claude-modelo", help="Modelo do Claude Code para --ia-claude (padrão: haiku)."
+        ),
+    ] = None,
 ) -> None:
     overrides: dict[str, Any] = {}
     if tipo:
@@ -201,6 +223,10 @@ def audit(
         overrides["ia_online"] = {"enabled": True}
         if ia_modelo:
             overrides["ia_online"]["modelo"] = ia_modelo
+    if ia_claude:
+        overrides["ia_claude"] = {"enabled": True}
+        if ia_claude_modelo:
+            overrides["ia_claude"]["modelo"] = ia_claude_modelo
     if texto_completo:
         overrides["refs"] = {"texto_completo": True}
     if sem_cache:
@@ -275,10 +301,15 @@ def audit(
             "referencia": referencia,
             "tipo": tipo,
             "ia_online": ia_online,
+            "ia_claude": ia_claude,
             "nivel": str(config.get("todo", "nivel", "a1")),
         }
         if ia_online and not config.online:
             raise ConfigError("--ia-online requer --online (a IA roda em servidor externo)")
+        if ia_claude and not config.online:
+            raise ConfigError(
+                "--ia-claude requer --online (o Claude Code roda em servidor externo)"
+            )
         report = _run_with_progress(pipeline, path, config, flags, quiet=quiet)
     except (ProjectError, ConfigError, ValueError) as exc:
         _err(str(exc))

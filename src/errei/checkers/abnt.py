@@ -191,8 +191,9 @@ class AbntChecker(BaseChecker):
             "ABNT-CIT-001",
             S.AVISO,
             "'apud' digitado no texto",
-            "Com abntex2cite, use \\apud{citado}{original} (ou \\apudonline) para que a "
-            "citação de citação seja formatada e as duas obras entrem na lista corretamente.",
+            "Com abntex2cite ou biblatex-abnt, use \\apud{original}{consultada} (ou "
+            "\\apudonline): a obra que você não leu primeiro, a que você leu depois. Assim a "
+            "citação de citação é formatada e as duas obras ficam ligadas ao .bib.",
             f"{R10520}, 7.6",
         ),
         Rule(
@@ -585,7 +586,7 @@ class AbntChecker(BaseChecker):
         out: list[Finding] = []
         for src in project.tex:
             m = src.masked
-            if style == "abntex2cite":
+            if style in ("abntex2cite", "biblatex-abnt"):
                 for mt in re.finditer(r"(?<![\\\w])apud\b", m):
                     out.append(
                         self.finding(
@@ -594,7 +595,8 @@ class AbntChecker(BaseChecker):
                             src=src,
                             start=mt.start(),
                             end=mt.end(),
-                            suggestion="\\apud{citado}{original} ou \\apudonline{citado}{original}",
+                            suggestion="\\apud{original}{consultada} ou "
+                            "\\apudonline{original}{consultada}",
                         )
                     )
             for mt in re.finditer(r"\bet\.?\s+al\b(?!\.)|\bet\.\s*al\.", m):
@@ -741,7 +743,7 @@ class AbntChecker(BaseChecker):
         dc = project.documentclass()
         if dc is not None:
             _name, opts, src, off = dc
-            size = re.search(r"\b(10|11|12)pt\b", opts)
+            size = re.search(r"\b(\d{1,2}(?:\.\d)?)pt\b", opts)
             paper = re.search(r"\b(a4|letter|a5|b5)paper\b", opts)
             problems = []
             if size and size.group(1) != "12":

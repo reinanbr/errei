@@ -54,6 +54,7 @@ def isolated_home(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
     """Cache e config do usuário isolados por teste."""
     monkeypatch.setenv("XDG_CACHE_HOME", str(tmp_path / "cache"))
     monkeypatch.setenv("XDG_CONFIG_HOME", str(tmp_path / "config"))
+    monkeypatch.setenv("XDG_DATA_HOME", str(tmp_path / "data"))
     monkeypatch.setenv("ERREI_REFERENCIA_DIR", str(tmp_path / "referencias"))
     monkeypatch.delenv("OPENALEX_API_KEY", raising=False)
     monkeypatch.setenv("NO_COLOR", "1")

@@ -24,6 +24,7 @@ SECTION_PREFIXES = ("sec:", "subsec:", "ssec:", "cap:", "chap:", "ch:", "part:",
 class LatexChecker(BaseChecker):
     name = "latex"
     title = "Projeto e estrutura LaTeX"
+    formatos = ("latex",)
     rules = (
         Rule(
             "LATEX-REF-001",

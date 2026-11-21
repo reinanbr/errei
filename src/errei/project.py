@@ -4,10 +4,12 @@ from __future__ import annotations
 
 import hashlib
 import os
+import re
 import threading
 from collections.abc import Iterator
 from dataclasses import dataclass, field
 from pathlib import Path
+from typing import Any
 
 from errei.bib.parser import BibEntry, BibFile, parse_bib
 from errei.latex.extract import CleanText, Paragraph, extract
@@ -43,9 +45,11 @@ CITE_CMDS = (
     "fullcite",
     "apud",
     "apudonline",
+    "textapud",
     "smartcite",
     "supercite",
 )
+APUD_CMDS = ("apud", "apudonline", "textapud")  # abntex2cite e biblatex-abnt
 
 
 class ProjectError(Exception):
@@ -79,6 +83,8 @@ class Project:
     bibs: list[BibFile]
     includes: list[Include]
     notes: list[str] = field(default_factory=list)
+    formato: str = "latex"  # latex | docx | pdf
+    documento: Any = None  # errei.documento.converter.Info (só .docx/.pdf)
     _clean: dict[Path, CleanText] = field(default_factory=dict, repr=False)
     _lock: threading.Lock = field(default_factory=threading.Lock, repr=False)
 
@@ -108,8 +114,13 @@ class Project:
 
     def cite_uses(self) -> list[CiteUse]:
         out: list[CiteUse] = []
-        single = tuple(c for c in CITE_CMDS if c not in ("apud", "apudonline"))
-        found = list(self.commands(single)) + list(self.commands(("apud", "apudonline"), 2))
+        single = tuple(c for c in CITE_CMDS if c not in APUD_CMDS)
+        found = list(self.commands(single))
+        for src in self.tex:  # \apud[p]{original}[p]{consultada}: opcional entre as chaves
+            found += [
+                (src, cmd)
+                for cmd in find_commands(src.masked, APUD_CMDS, mandatory=2, interleaved=True)
+            ]
         for src, cmd in found:
             for arg in cmd.mandatory:
                 for key, off in split_keys(arg):
@@ -219,14 +230,78 @@ def _choose_main(cands: list[SourceFile], notes: list[str]) -> SourceFile | None
     return best
 
 
+_NAO_AUDITAR = re.compile(r"^(?:~\$|\.~lock|errei-relatorio)", re.IGNORECASE)
+
+
+def _documentos(root: Path) -> list[Path]:
+    """.docx/.pdf na pasta (só no primeiro nível; relatórios do errei e travas do Word não)."""
+    from errei.documento import FORMATOS
+
+    try:
+        itens = sorted(root.iterdir())
+    except OSError:
+        return []
+    return [
+        p
+        for p in itens
+        if p.is_file()
+        and not p.is_symlink()
+        and p.suffix.lower() in FORMATOS
+        and not _NAO_AUDITAR.match(p.name)
+    ]
+
+
+def load_documento(arquivo: Path, root: Path) -> Project:
+    """Projeto a partir de um .docx/.pdf (convertido em memória; o arquivo não muda)."""
+    from errei.documento import DocumentoError
+    from errei.documento.converter import converter
+    from errei.documento.modelo import ler
+
+    try:
+        doc = ler(arquivo, arquivo.relative_to(root))
+    except DocumentoError as exc:
+        raise ProjectError(str(exc)) from exc
+    tex, conv, bib, bconv, info = converter(doc)
+    src = SourceFile(doc.caminho, doc.abspath, tex, conversao=conv)
+    bibs = [parse_bib(SourceFile(doc.caminho, doc.abspath, bib, conversao=bconv))] if bib else []
+    return Project(
+        root, src, [src], [], bibs, [], list(doc.avisos), formato=doc.formato, documento=info
+    )
+
+
 def load_project(root: Path, main: str | None = None) -> Project:
+    """Pasta de um projeto LaTeX, ou um arquivo .tex, .docx ou .pdf."""
     root = root.expanduser()
+    if root.is_file():
+        from errei.documento import FORMATOS
+
+        suf = root.suffix.lower()
+        if suf == ".tex":
+            return load_project(root.parent, main or root.name)
+        if suf in FORMATOS:
+            arq = root.resolve()
+            return load_documento(arq, arq.parent)
+        raise ProjectError(
+            f"formato não suportado: {root.name} (indique a pasta do LaTeX ou um .tex, .docx "
+            "ou .pdf)"
+        )
     if not root.is_dir():
-        raise ProjectError(f"pasta não encontrada: {root}")
+        raise ProjectError(f"pasta ou arquivo não encontrado: {root}")
     root = root.resolve()
     tex_paths, bib_paths = _walk(root)
     if not tex_paths:
-        raise ProjectError(f"nenhum arquivo .tex encontrado em {root}")
+        docs = _documentos(root)
+        if len(docs) == 1:
+            project = load_documento(docs[0], root)
+            project.notes.insert(0, f"nenhum .tex na pasta; auditando {docs[0].name}")
+            return project
+        if docs:
+            nomes = ", ".join(d.name for d in docs[:5])
+            raise ProjectError(
+                f"nenhum .tex em {root}, mas há {len(docs)} documentos ({nomes}): indique qual "
+                f'auditar, por exemplo: errei "{docs[0].name}"'
+            )
+        raise ProjectError(f"nenhum arquivo .tex, .docx ou .pdf encontrado em {root}")
     sources = {p.resolve(): read_source(p, p.relative_to(root)) for p in tex_paths}
     notes: list[str] = []
     for s in sources.values():

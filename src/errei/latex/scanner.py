@@ -76,9 +76,13 @@ def _skip_ws(text: str, i: int) -> int:
 
 
 def parse_args(
-    text: str, pos: int, max_mandatory: int, max_optional: int = 3
+    text: str, pos: int, max_mandatory: int, max_optional: int = 3, *, interleaved: bool = False
 ) -> tuple[list[Arg], int]:
-    """Lê argumentos ``[..]``/``{..}`` a partir de ``pos``."""
+    """Lê argumentos ``[..]``/``{..}`` a partir de ``pos``.
+
+    Com ``interleaved``, aceita opcionais entre os obrigatórios, como no
+    ``\\apud[p.~12]{a}[p.~200]{b}`` do biblatex-abnt.
+    """
     args: list[Arg] = []
     mand = 0
     opt = 0
@@ -88,7 +92,7 @@ def parse_args(
         if j >= len(text):
             break
         c = text[j]
-        if c == "[" and opt < max_optional and mand == 0:
+        if c == "[" and opt < max_optional and (mand == 0 or interleaved):
             k = _match_group(text, j, "[", "]")
             if k == -1:
                 break
@@ -108,7 +112,12 @@ def parse_args(
 
 
 def find_commands(
-    text: str, names: Iterable[str], *, mandatory: int = 1, optional: int = 3
+    text: str,
+    names: Iterable[str],
+    *,
+    mandatory: int = 1,
+    optional: int = 3,
+    interleaved: bool = False,
 ) -> Iterator[Command]:
     names = sorted(set(names), key=len, reverse=True)
     if not names:
@@ -123,7 +132,7 @@ def find_commands(
             k -= 1
         if bs % 2 == 1:
             continue
-        args, end = parse_args(text, m.end(), mandatory, optional)
+        args, end = parse_args(text, m.end(), mandatory, optional, interleaved=interleaved)
         yield Command(m.group(1), bool(m.group(2)), m.start(), end, tuple(args))
 
 

@@ -102,8 +102,9 @@ def model_dir() -> Path:
     env = os.environ.get("ERREI_RESUMO_MODEL_DIR")
     if env:
         return Path(env).expanduser()
-    base = os.environ.get("XDG_DATA_HOME") or str(Path.home() / ".local" / "share")
-    return Path(base) / "errei" / "modelos" / MODEL_NAME
+    from errei.paths import data_dir
+
+    return data_dir() / "modelos" / MODEL_NAME
 
 
 def unavailable_reason() -> str | None:

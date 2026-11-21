@@ -245,9 +245,11 @@ HUMANOS = re.compile(
 AREA = {
     "completude": "Completude do trabalho",
     "latex": "Estrutura LaTeX",
+    "documento": "Estrutura do documento",
     "refs": "Referências e citações",
     "nacionais": "Referências e citações",
     "literatura": "Referências e citações",
+    "apud": "Referências e citações",
     "abnt": "Normas ABNT",
     "ptbr": "Língua portuguesa",
     "escrita": "Escrita e clareza",
@@ -295,7 +297,7 @@ def _hid(*parts: str) -> str:
 def _where(f: Finding) -> str:
     if f.location is None:
         return ""
-    return f"{f.location.file.as_posix()}:{f.location.line}"
+    return f.location.onde
 
 
 def _priority(f: Finding, nivel: Nivel) -> str | None:
@@ -452,7 +454,10 @@ def metas(report: Report, nivel: Nivel, project: Any, mono: bool) -> list[Meta]:
                     f"≥ {nivel.doi:.0%}",
                     f"{st['doi']:.0%}",
                     st["doi"] >= nivel.doi,
-                    "complete o campo doi no .bib (rode com --online para conferir)",
+                    "complete o campo doi no .bib (rode com --online para conferir)"
+                    if getattr(project, "formato", "latex") == "latex"
+                    else "acrescente o DOI dos artigos na lista de referências "
+                    "(rode com --online para conferir)",
                 )
             )
     if project is not None:

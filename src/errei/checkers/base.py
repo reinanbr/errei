@@ -76,6 +76,8 @@ class BaseChecker:
     rules: ClassVar[tuple[Rule, ...]] = ()
     phase: ClassVar[int] = 0
     uses_network: ClassVar[bool] = False
+    # formatos de trabalho a que o verificador se aplica (latex, docx, pdf)
+    formatos: ClassVar[tuple[str, ...]] = ("latex", "docx", "pdf")
 
     def __init_subclass__(cls, **kwargs: Any) -> None:
         super().__init_subclass__(**kwargs)

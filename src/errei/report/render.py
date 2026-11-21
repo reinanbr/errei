@@ -197,9 +197,7 @@ def to_markdown(report: Report) -> str:
                 continue
             loc = ""
             if f.location:
-                loc = f"L{f.location.line}"
-                if f.location.column:
-                    loc += f":{f.location.column}"
+                loc = f.location.rotulo if f.location.unit else f"L{f.location.rotulo}"
             head = f"- **{SEV_LABEL[f.severity]}** `{f.code}` {loc} — {f.message}{_conf(f)}"
             if f.manual_review:
                 head += " _(revisar manualmente)_"
@@ -252,7 +250,7 @@ def _highlight_line(f: Finding) -> Text:
     line = Text()
     where = "(projeto)"
     if f.location:
-        where = f"{f.location.file.as_posix()}:{f.location.line}"
+        where = f.location.onde
     line.append(f"  {where:<34} ", style="bold")
     line.append(f"{SEV_LABEL[f.severity]:<8} ", style=SEV_STYLE[f.severity])
     line.append(f.message + _conf(f))
@@ -345,7 +343,7 @@ def render_term(
             line = Text()
             loc = ""
             if f.location:
-                loc = f"{f.location.line}" + (f":{f.location.column}" if f.location.column else "")
+                loc = f.location.rotulo
             line.append(f"{loc:>8} ", style="dim")
             line.append(f"{SEV_LABEL[f.severity]:<8} ", style=SEV_STYLE[f.severity])
             line.append(f"{f.code:<20} ", style="magenta")

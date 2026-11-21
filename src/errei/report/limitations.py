@@ -54,12 +54,19 @@ BY_CHECKER = {
     "original, com no máximo 300 caracteres e a fonte; leia a obra antes de citar. A busca "
     "não cobre bases fechadas, e a ausência de fonte não significa que a afirmação esteja "
     "errada.",
+    "apud": "A conferência das citações de citação (apud) lê o fonte e, com --online, as "
+    "bases abertas: a lista de referências do OpenAlex é incompleta (livros, capítulos e "
+    "obras antigas costumam faltar), então 'não cita' é um convite a conferir, não prova. "
+    "Com --texto-completo, a obra original é procurada pelo sobrenome do primeiro autor no "
+    "texto de acesso livre da obra consultada, o que falha com PDFs mal extraídos e grafias "
+    "diferentes. O errei não sabe se você leu a original: só aponta incoerências.",
     "referencia": "A referência por área compara o manuscrito com quantis de uma amostra "
     "de obras de acesso aberto no top 10% de citações normalizadas do OpenAlex (a "
     "procedência, o n e a data aparecem na tabela). Citação mede impacto, não qualidade; a "
     "classificação de área do OpenAlex é automática; o nº de referências da amostra só "
     "conta as obras que o OpenAlex localizou, e as medidas de texto vêm de PDFs (com "
-    "legendas e tabelas), enquanto as do manuscrito vêm do LaTeX. Estar fora da faixa usual "
+    "legendas e tabelas), enquanto as do manuscrito vêm do texto analisado. Estar fora da "
+    "faixa usual "
     "não é erro, e estar dentro não garante aceite.",
 }
 
@@ -70,6 +77,49 @@ IA_ONLINE = (
     "copiar, e o errei não escreve no trabalho. Redija com suas próprias palavras."
 )
 
+IA_CLAUDE = (
+    "Com --ia-claude, a frase de cada citação de citação e os metadados das duas obras foram "
+    "enviados ao Claude Code (Anthropic), que buscou e leu páginas na web numa sessão isolada, "
+    "sem acesso aos arquivos do trabalho. As respostas da IA aparecem só como indicadores "
+    "(APUD-IA-001), com os links e os trechos que ela diz ter lido, e não são conferidas pelo "
+    "errei: confira-os. A IA não decide nada sozinha e o errei não escreve no trabalho."
+)
 
-def limitations_for(checkers: list[str]) -> list[str]:
-    return GENERAL + [BY_CHECKER[c] for c in checkers if c in BY_CHECKER]
+
+DOCX = (
+    "O .docx é lido sem o Word: o texto dos parágrafos, os estilos de título, o resumo e a "
+    "lista de referências. Notas de rodapé, caixas de texto, tabelas, equações, comentários, "
+    "cabeçalhos e rodapés não são analisados; o texto apagado em alterações controladas é "
+    "ignorado. A localização é o número do parágrafo (sem contar os vazios)."
+)
+PDF = (
+    "O texto do PDF é extraído sem OCR: PDFs digitalizados (imagem) não são lidos. Colunas, "
+    "hifenização, cabeçalhos e rodapés são tratados por heurística e podem gerar falsos "
+    "positivos (palavras coladas, ordem trocada em duas colunas). Títulos são reconhecidos "
+    "pela numeração, por maiúsculas e pelos nomes usuais das seções. A localização é a página."
+)
+DOC_REFS = (
+    "No .docx/.pdf, as citações (NBR 10520, APA, numéricas) e a lista de referências são "
+    "texto digitado: o errei as reconhece por autor e ano (ou número). Citações em formato "
+    "incomum podem não ser ligadas, e campos da referência (periódico, volume, páginas) podem "
+    "não ser separados; por isso não há verificação de campos obrigatórios."
+)
+
+
+ABNT_DOC = (
+    "No .docx/.pdf, a ABNT é verificada no texto lido (seções, resumo, palavras-chave, "
+    "citações, lista de referências) e, no .docx, no tamanho do papel, nas margens e na "
+    "fonte padrão. Recuos, espaçamento e a aparência final precisam ser conferidos no arquivo."
+)
+
+
+def limitations_for(checkers: list[str], formato: str = "latex") -> list[str]:
+    if formato == "latex":
+        return GENERAL + [BY_CHECKER[c] for c in checkers if c in BY_CHECKER]
+    out = [GENERAL[0], GENERAL[2]]
+    out += [ABNT_DOC if c == "abnt" else BY_CHECKER[c] for c in checkers if c in BY_CHECKER]
+    if formato == "docx":
+        out += [DOCX, DOC_REFS]
+    elif formato == "pdf":
+        out += [PDF, DOC_REFS]
+    return out
