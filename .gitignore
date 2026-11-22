@@ -16,5 +16,13 @@ treino/modelos/
 /treino-gpu/saida/
 /.venv-gpu/
 
+# treino-modelos: banco, dados, saídas e ambiente (as listas Scopus/WoS nunca entram no git)
+/treino-modelos/dados/
+/treino-modelos/saida/
+/treino-modelos/listas/
+/.venv-modelos/
+*.sqlite-wal
+*.sqlite-shm
+
 # o CI instala com uv pip install; o lock gerado pelo uv run não é versionado
 uv.lock

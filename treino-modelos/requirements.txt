@@ -1,0 +1,16 @@
+# Versões fixas para a GPU alugada (Linux x86_64, CUDA 12.4). Instale com:
+#   pip install -r treino-modelos/requirements.txt
+# Todas com licença aprovada pela OSI. A coleta do banco (banco/coletar.py) e a
+# classificação (banco/classificar.py) usam só a biblioteca padrão: no VPS basta
+# python3 >= 3.10 (e tomli no 3.10).
+--extra-index-url https://download.pytorch.org/whl/cu124
+torch==2.5.1+cu124          # BSD-3-Clause
+transformers==4.46.3        # Apache-2.0
+tokenizers==0.20.3          # Apache-2.0
+accelerate==1.1.1           # Apache-2.0
+sentencepiece==0.2.0        # Apache-2.0 (tokenizadores do mDeBERTa, mT5 e E5)
+protobuf==5.28.3            # BSD-3-Clause
+pyarrow==18.0.0             # Apache-2.0 (CSAbstruct)
+numpy==2.1.3                # BSD-3-Clause
+tomli==2.0.2; python_version < "3.11"   # MIT
+# opcional, para gerar_ia.py --motor vllm (bem mais rápido): pip install vllm  (Apache-2.0)

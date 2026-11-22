@@ -1,0 +1,202 @@
+# Modelos do errei treinados a partir do banco (itens 2 a 9 do gpu_train_list.md).
+# Licenças dos modelos-base: as declaradas no Hugging Face. CONFIRA cada uma antes de
+# treinar e registre a data aqui (o cartão do modelo copia base_licenca).
+#
+# Filtros por modelo (opcional), em [<modelo>.filtros]:
+#   idiomas = ["pt", "en"]          ano_min = 2010           ano_max = 2024
+#   campos = ["Medicine"]           top10 = true             (obras no top 10% de citações)
+#   qualis = ["A1", "A2", "A3", "A4"]                         (estrato da revista, melhor área)
+#   scopus = true                   scopus_percentil_min = 50 (CiteScore)
+#   wos = true  ou  wos = ["SCIE", "SSCI"]
+# Os filtros de Qualis/Scopus/WoS só funcionam depois de banco/classificar.py.
+
+[geral]
+semente = 42
+validacao = 0.05
+teste = 0.05
+dados = "treino-modelos/dados"     # dados/<modelo>/{treino,validacao,teste}.jsonl
+saida = "treino-modelos/saida"     # saida/<modelo>/{checkpoints,final}; pacotes em saida/dist
+checkpoint_passos = 1000
+bf16 = "auto"
+warmup = 0.06
+peso_decaimento = 0.01
+acumulacao = 1
+max_avaliacao = 5000               # exemplos de teste avaliados (geração é lenta)
+
+[custo]
+gpu = "RTX 4090"
+[custo.preco_hora_usd]             # confira na Hostinger antes de contratar
+"RTX 4090" = 0.42
+"RTX PRO 6000" = 0.65
+
+# ------------------------------------------------------------------ 2. errei-resumo-v2
+[resumo]
+base = "microsoft/mdeberta-v3-base"
+base_licenca = "MIT"
+gpu = "RTX 4090"
+max_len = 192
+epocas = 3
+batch = 32
+lr = 3e-5
+passos_por_segundo = 3.5           # referência para --estimar sem GPU
+csabstruct = true
+csabstruct_traducoes = "treino/dados/csabstruct/traducoes.jsonl"   # se existir
+max_resumos = 200000
+max_por_classe = 150000
+[resumo.filtros]
+idiomas = ["pt", "en", "es"]
+
+# ------------------------------------------------------------------ 3. errei-busca
+[busca]
+base = "intfloat/multilingual-e5-base"
+base_licenca = "MIT"
+gpu = "RTX 4090"
+max_len = 256
+epocas = 1
+batch = 64
+lr = 2e-5
+temperatura = 0.05
+passos_por_segundo = 2.0
+pares_por_obra = 3
+max_pares = 1500000
+negativos_dificeis = true
+prefixo_consulta = "query: "
+prefixo_passagem = "passage: "
+[busca.filtros]
+idiomas = ["pt", "en", "es"]
+
+# ------------------------------------------------------------------ 4. errei-chaves
+[chaves]
+base = "google/mt5-base"
+base_licenca = "Apache-2.0"
+gpu = "RTX 4090"
+max_len = 384
+max_len_saida = 48
+epocas = 3
+batch = 16
+lr = 3e-4
+passos_por_segundo = 3.0
+feixes = 4
+origens = ["autor"]                # palavras-chave dadas pelos autores (SciELO, JATS)
+min_termos = 3
+max_termos = 8
+max_exemplos = 400000
+[chaves.filtros]
+idiomas = ["pt", "en", "es"]
+
+# ------------------------------------------------------------------ 5. errei-ref
+[ref]
+base = "microsoft/mdeberta-v3-base"
+base_licenca = "MIT"
+gpu = "RTX 4090"
+max_len = 192
+epocas = 2
+batch = 32
+lr = 5e-5
+passos_por_segundo = 3.5
+variantes_por_obra = 2
+ruido = 0.3
+estilos = ["abnt", "apa", "vancouver", "ieee", "chicago"]
+max_obras = 300000
+
+# ------------------------------------------------------------------ 6a. errei-area
+[area]
+base = "microsoft/mdeberta-v3-base"
+base_licenca = "MIT"
+gpu = "RTX 4090"
+max_len = 320
+epocas = 2
+batch = 32
+lr = 3e-5
+passos_por_segundo = 2.2
+rotulo = "campo"                   # dominio (4), campo (26) ou subcampo (~250)
+min_por_classe = 200
+max_por_classe = 25000
+
+# ------------------------------------------------------------------ 6b. errei-secoes
+[secoes]
+base = "microsoft/mdeberta-v3-base"
+base_licenca = "MIT"
+gpu = "RTX 4090"
+max_len = 256
+epocas = 3
+batch = 32
+lr = 3e-5
+passos_por_segundo = 2.8
+alvo = "parte"                     # "parte" (metodo:participantes...) ou "tipo" (metodo...)
+com_titulo = false
+min_chars = 80
+max_paragrafos_secao = 4
+min_por_classe = 300
+max_por_classe = 40000
+
+# ------------------------------------------------------------------ 7. errei-ia
+[ia]
+base = "microsoft/mdeberta-v3-base"
+base_licenca = "MIT"
+gpu = "RTX 4090"
+max_len = 384
+epocas = 2
+batch = 32
+lr = 2e-5
+passos_por_segundo = 1.8
+ano_humano_max = 2021
+fpr_alvo = 0.01                    # falso positivo máximo (humano acusado de IA)
+proporcao_humano = 1.0
+incluir_secoes = true
+min_chars = 300
+max_chars = 2000
+
+[ia.gerar]                         # gerar_ia.py (na RTX PRO 6000, 96 GB)
+n_por_gerador = 25000
+lote = 16
+max_novos = 450
+temperaturas = [0.7, 0.9, 1.1]
+top_p = 0.95
+modos = ["do_zero", "reescrita", "continuacao", "secao"]
+linguas = ["pt", "en"]
+motor = "transformers"             # "vllm" é bem mais rápido (pip install vllm, Apache-2.0)
+
+[[ia.gerar.modelos]]
+nome = "Qwen/Qwen2.5-7B-Instruct"
+licenca = "Apache-2.0"
+
+[[ia.gerar.modelos]]
+nome = "mistralai/Mistral-7B-Instruct-v0.3"   # exige aceitar os termos no Hugging Face (huggingface-cli login)
+licenca = "Apache-2.0"
+
+# ------------------------------------------------------------------ 8. errei-trad
+[trad]
+base = "google/mt5-base"
+base_licenca = "Apache-2.0"
+gpu = "RTX 4090"
+max_len = 384
+max_len_saida = 384
+epocas = 2
+batch = 16
+lr = 3e-4
+passos_por_segundo = 1.5
+feixes = 4
+direcoes = ["pt-en", "en-pt"]
+com_titulos = true
+max_chars = 1200
+max_pares = 800000
+max_avaliacao = 2000
+
+# ------------------------------------------------------------------ 9. errei-base
+[base]
+base = "microsoft/mdeberta-v3-base"   # ou "xlm-roberta-base" (MIT), que já tem cabeça de MLM
+base_licenca = "MIT"
+gpu = "RTX PRO 6000"
+max_len = 512
+epocas = 1
+batch = 32
+acumulacao = 2
+lr = 5e-5
+passos_por_segundo = 0.8
+prob_mascara = 0.15
+tamanho_trecho = 2000
+incluir_secoes = true
+max_textos = 3000000
+gradient_checkpointing = false
+checkpoint_passos = 2000

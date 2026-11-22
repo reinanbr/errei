@@ -1,0 +1,64 @@
+# Banco de treino do errei: o que coletar e de onde.
+# Rode a coleta no VPS barato (dias, sem GPU) e leve só o .sqlite para a GPU.
+
+[banco]
+arquivo = "treino-modelos/dados/banco.sqlite"
+# CC BY-SA obriga os pesos a sair em CC BY-SA; desligado por padrão.
+aceitar_sa = false
+
+[rede]
+# segundos mínimos entre pedidos ao mesmo host (seja educado com as APIs abertas)
+intervalo_padrao = 1.0
+tentativas = 5
+timeout = 60
+[rede.intervalos]
+"api.openalex.org" = 0.12          # com OPENALEX_API_KEY; sem chave, use 1.0
+"articlemeta.scielo.org" = 1.0
+"www.ebi.ac.uk" = 0.25             # Europe PMC
+"www.scielo.br" = 2.0              # site: também respeita robots.txt e Crawl-delay
+
+# ---------------------------------------------------------------- OpenAlex (CC0)
+# Cada consulta é um filtro de /works (https://docs.openalex.org/api-entities/works/filter-works).
+# Só obras com licença aberta trazem resumo para o banco; "texto = false" coleta só
+# metadados bibliográficos (servem ao errei-ref e às classificações).
+[[openalex.consultas]]
+nome = "pt_aberto"
+filtro = "language:pt,best_oa_location.license:cc-by|cc0|public-domain,has_abstract:true,type:article"
+max = 400000
+
+[[openalex.consultas]]
+nome = "en_brasil_aberto"
+filtro = "language:en,authorships.institutions.country_code:br,best_oa_location.license:cc-by|cc0|public-domain,has_abstract:true,type:article"
+max = 300000
+
+[[openalex.consultas]]
+nome = "en_geral_aberto"
+filtro = "language:en,best_oa_location.license:cc-by|cc0|public-domain,has_abstract:true,type:article,publication_year:2010-2025"
+max = 300000
+
+[[openalex.consultas]]
+nome = "es_aberto"
+filtro = "language:es,best_oa_location.license:cc-by|cc0|public-domain,has_abstract:true,type:article"
+max = 80000
+
+[[openalex.consultas]]
+nome = "metadados_br"
+filtro = "authorships.institutions.country_code:br,type:article|book|book-chapter"
+max = 300000
+texto = false
+
+# ---------------------------------------------------------------- SciELO ArticleMeta
+# Traz título, resumo e palavras-chave do autor em pt, en e es do mesmo artigo (ótimo
+# para busca bilíngue, tradução e palavras-chave). A licença é conferida no OpenAlex.
+[scielo]
+colecoes = ["scl"]                 # scl = Brasil; outras: prt, arg, chl, col, esp, mex...
+desde = "2010-01-01"
+ate = ""
+max = 300000
+
+# ---------------------------------------------------------------- textos completos (JATS)
+# Seções e referências de artigos CC BY/CC0: Europe PMC (pmcid) e SciELO (PID).
+[textos]
+max = 60000
+fontes = ["europepmc", "scielo"]
+idiomas = ["pt", "en", "es"]
