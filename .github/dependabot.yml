@@ -1,0 +1,12 @@
+version: 2
+updates:
+  # actions do CI (.github/workflows): um PR por semana com todas as atualizações juntas
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    commit-message:
+      prefix: ci
+    groups:
+      actions:
+        patterns: ["*"]
