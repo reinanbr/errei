@@ -3,7 +3,7 @@
 Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/); versões
 seguem [SemVer](https://semver.org/lang/pt-BR/).
 
-## [Não lançado]
+## [0.7.0] - 2026-11-21
 
 ### Adicionado
 
@@ -79,6 +79,8 @@ seguem [SemVer](https://semver.org/lang/pt-BR/).
   resposta vem num esquema JSON fixo, os textos são cortados, as respostas ficam no cache
   `http.sqlite` e o envio é registrado em `meta.ia_claude`. O achado `APUD-IA-001` é sempre
   `info`. `errei doctor` mostra se o `claude` está instalado.
+- Dependabot para as actions do CI (`.github/dependabot.yml`): um PR por semana com todas
+  as atualizações juntas.
 
 ### Alterado
 
@@ -93,6 +95,9 @@ seguem [SemVer](https://semver.org/lang/pt-BR/).
   demais citações textuais.
 - `ABNT-CIT-001` vale também para o biblatex-abnt, e a sugestão passa a ser
   `\apud{original}{consultada}` (antes, `\apud{citado}{original}`, com os nomes trocados).
+- CI: actions em Node 24, que o GitHub passou a exigir (`actions/checkout` v7,
+  `astral-sh/setup-uv` v10.4.0, `actions/upload-artifact` v7,
+  `softprops/action-gh-release` v3).
 
 ### Licenças
 
